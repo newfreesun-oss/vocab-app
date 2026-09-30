@@ -1,0 +1,2399 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>일본어 조각 섀도잉 타자 연습장</title>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            /* 👇 PC에서는 중앙 정렬 유지 */
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 10px;
+            overflow-x: hidden;
+            box-sizing: border-box;
+        }
+        .container {
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 750px;       /* PC에서는 최대 750px 고정 */
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        /* 스마트폰처럼 화면이 좁을 때(768px 이하) */
+        @media (max-width: 768px) {
+            body {
+                /* 👇 모바일에서 맨 위로 붙는 설정 */
+                justify-content: flex-start !important; 
+                min-height: auto !important;            
+            }
+            .container {
+                padding: 12px;      /* 컨테이너 내부 여백 최적화 */
+                border-radius: 12px;
+                width: 100%;
+                max-width: 100%;    /* 모바일 화면 폭을 넘지 않도록 꽉 채움 */
+                margin-top: 0 !important;
+            }
+            .mode-btn, .stage-btn {
+                font-size: 0.9rem;  
+                padding: 12px 10px;
+            }
+            canvas {
+                width: 100% !important;
+                height: 320px !important; 
+            }
+            /* 연습 화면 진입 시 카드와 입력창이 화면 밖으로 밀리지 않도록 고정 */
+            .card {
+                padding: 12px !important;
+                margin-bottom: 12px !important;
+            }
+            input[type="text"] {
+                width: 100% !important; /* 입력창이 컨테이너 밖으로 삐져나가지 않게 100% 꽉 채움 */
+                box-sizing: border-box !important;
+                font-size: 1rem !important;
+                padding: 10px !important;
+            }
+            .box-top-target {
+                font-size: 1.05rem !important; /* 모바일에서 글자가 너무 길어 줄바꿈 깨짐 방지 */
+                word-break: break-all;
+            }
+            .box-mid, .box-bottom-input {
+                font-size: 0.95rem !important;
+                word-break: break-all;
+            }
+        }
+        h2 {
+            color: #ff6b6b;
+            margin-bottom: 20px;
+        }
+        .mode-select-box {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .mode-btn {
+            background: #2d2d2d;
+            color: white;
+            border: 2px solid #444;
+            padding: 10px 16px;
+            font-size: 0.95rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: bold;
+        }
+        .mode-btn.active {
+            border-color: #ff6b6b;
+            background: #ff6b6b33;
+        }
+        .extra-toggle-box {
+            margin-bottom: 20px;
+        }
+        .extra-toggle-btn {
+            background: #2d2d2d;
+            color: #aaa;
+            border: 2px dashed #555;
+            padding: 10px 20px;
+            font-size: 0.95rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: bold;
+        }
+        .extra-toggle-btn.active {
+            background: #4dabf733;
+            border-color: #4dabf7;
+            border-style: solid;
+            color: #4dabf7;
+        }
+        .stage-select {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .stage-btn {
+            background: #2d2d2d;
+            color: white;
+            border: 2px solid #444;
+            padding: 15px;
+            font-size: 1.1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .stage-btn:hover {
+            border-color: #ff6b6b;
+            background: #383838;
+        }
+        .stage-btn span {
+            color: #4dabf7;
+            font-size: 0.95rem;
+        }
+        .card {
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border-left: 6px solid #ff6b6b;
+            text-align: left;
+        }
+        .row-label {
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .box-top-target {
+            font-size: 1.2rem;
+            color: #4dabf7;
+            font-weight: bold;
+            letter-spacing: 1px;
+            word-break: break-all;
+            margin-bottom: 12px;
+        }
+        .box-mid {
+            font-size: 1.05rem;
+            color: #adb5bd;
+            margin-bottom: 12px;
+        }
+        .box-bottom-input {
+            font-size: 1.05rem;
+            color: #adb5bd;
+        }
+
+        .char-correct { color: #51cf66; }
+        .char-incorrect { color: #fa5252; text-decoration: underline; }
+        .char-missing { color: #868e96; }
+
+        input[type="text"] {
+            width: 90%;
+            padding: 12px;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            border: 2px solid #444;
+            background: #2b2b2b;
+            color: white;
+            text-align: center;
+            outline: none;
+            transition: 0.2s;
+            margin-bottom: 10px;
+        }
+        input[type="text"]:focus {
+            border-color: #ff6b6b;
+        }
+        input[type="text"]:disabled {
+            background: #1a1a1a;
+            color: #666;
+            border-color: #333;
+            cursor: not-allowed;
+        }
+
+        .feedback-message {
+            font-size: 0.95rem;
+            font-weight: bold;
+            min-height: 25px;
+            margin-bottom: 10px;
+        }
+
+        .handwriting-section {
+            position: relative;
+            left: 50%;
+            right: 50%;
+            margin-left: -50vw;
+            margin-right: -50vw;
+            width: 100vw;
+            background: #1a1a1a;
+            padding: 20px 0;
+            border-top: 1px solid #333;
+            border-bottom: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-sizing: border-box;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+        .handwriting-label {
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-bottom: 10px;
+        }
+        canvas {
+            background: #ffffff;
+            cursor: crosshair;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            width: 95vw;
+            height: 560px;
+            box-sizing: border-box;
+            border-radius: 8px;
+        }
+        .canvas-tools {
+            margin-top: 15px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .canvas-btn {
+            background: #333;
+            color: white;
+            border: 2px solid #555;
+            padding: 10px 24px;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        .canvas-btn:hover { background: #444; border-color: #777; }
+        
+        .canvas-btn.active-tool {
+            background: #fab005;
+            color: #111;
+            border-color: #f59f00;
+        }
+        .canvas-btn.primary {
+            background: #ff6b6b;
+            border: none;
+        }
+        .canvas-btn.primary:hover { background: #fa5252; }
+
+        .progress-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+            color: #888;
+            font-size: 0.9rem;
+            width: 100%;
+        }
+        .back-btn {
+            background: #444;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .back-btn:hover { background: #555; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+	
+
+    <div class="container">
+        <!-- 1. 스테이지 및 모드 선택 화면 -->
+        <div id="stageView">
+            <h2>🇯🇵 일본어 섀도잉 타자 연습 - 모드 선택</h2>
+            
+            <div class="mode-select-box">
+                <button class="mode-btn active" id="modeReadBtn" onclick="setMode('read')">🎵 음 타이핑 모드</button>
+                <button class="mode-btn" id="modeMeanBtn" onclick="setMode('mean')">🇰🇷 뜻 타이핑 모드</button>
+                <button class="mode-btn" id="modeJpBtn" onclick="setMode('jp')">🇯🇵 일본어 입력 모드</button>
+            </div>
+
+<!-- 외부 300문장 전용 독립 낭독 버튼 -->
+            <div class="extra-toggle-box">
+                <button class="extra-toggle-btn" id="externalPlayBtn" onclick="startExternal300Mode()">📁 외부 300문장 순차 낭독 모드 시작</button>
+            </div>
+
+            <!-- 추가 300문장 포함 토글 버튼 -->
+            <div class="extra-toggle-box">
+                <button class="extra-toggle-btn" id="extraToggleBtn" onclick="toggleExtraSentences()">➕ 추가 300문장 파일 결합 (OFF)</button>
+            </div>
+
+            <div class="stage-select">
+		<!-- 👇 추가된 단어 연습 버튼 -->
+		<button class="stage-btn" onclick="MakeAnihogo()">기록하는 일본어 <span id="MakeWord"> 수첩</span></button>
+	    <button class="stage-btn" onclick="startWordPractice()">단어 연습 (DAN.JS 풀) <span id="countWord"> 180 문장</span></button>
+                <button class="stage-btn" onclick="startStage(1)">1단계 (기초 필수 100문장) <span id="count1">100 문장</span></button>
+                <button class="stage-btn" onclick="startStage(2)">2단계 (1단계 + 확장 일상) <span id="count2">150 문장</span></button>
+                <button class="stage-btn" onclick="startStage(3)">3단계 (1~2단계 + 심화 응용) <span id="count3">200 문장</span></button>
+                <button class="stage-btn" onclick="startStage(4)">4단계 (1~3단계 + 유창성 도전) <span id="count4">250 문장</span></button>
+                <button class="stage-btn" onclick="startStage(5)">5단계 (1~4단계 + 마스터 랠리) <span id="count5">750 문장</span></button>
+            </div>
+        </div>
+
+        <!-- 2. 실제 타자 연습 화면 -->
+        <div id="practiceView" class="hidden">
+            <h2 id="stageTitle">단계 연습</h2>
+            
+            <div class="card" id="cardContainer">
+                <div id="slotTop"></div>
+                <div id="slotMid"></div>
+                <div id="slotBottom"></div>
+            </div>
+
+            <!-- 메인 입력창 (타이핑창) -->
+            <input type="text" id="userInput" placeholder="전체 문장을 타이핑한 후 엔터키를 누르세요" autocomplete="off">
+            
+            <!-- 피드백 메시지 영역 -->
+            <div class="feedback-message" id="feedbackMsg"></div>
+            
+            <!-- 진행 상태 및 뒤로가기 -->
+            <div class="progress-box">
+                <button class="back-btn" onclick="returnToMenu()">← 스테이지 선택으로</button>
+                <div id="progressText">문장 1 / 1</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 일본어 입력 모드일 때만 나타나는 풀스크린 캔버스 영역 -->
+    <div id="canvasSectionWrapper" class="hidden">
+        <div class="handwriting-section">
+            <div class="handwriting-label" id="canvasGuideLabel">✍️ [정답화면]을 누르면 캔버스 맨 하단에 정답이 나타납니다</div>
+            <canvas id="drawCanvas" width="1600" height="1120"></canvas>
+            <div class="canvas-tools">
+                <button class="canvas-btn" id="eraserBtn" onclick="toggleEraser()">🧹 지우개 모드</button>
+                <button class="canvas-btn" onclick="clearCanvas()">🗑️ 전체 지우기</button>
+                <button class="canvas-btn primary" id="actionBtn" onclick="handleCanvasAction()">정답화면</button>
+            </div>
+        </div>
+        <div style="text-align: center;" class="feedback" id="feedbackText"></div>
+    </div>
+
+<!-- 추가모드 저장모드 -->
+
+<!-- 기록하는 일본어 수첩 화면 (전체 화면 모드) -->
+<div id="memoPageView" class="hidden">
+    <!-- 헤더 영역 -->
+    <div class="memo-header">
+        <button class="back-btn" onclick="closeMemoPage()">←</button>
+        <h2>일본어 기록 수첩</h2>
+    </div>
+
+    <!-- 기록 내용이 표시되는 큰 박스 (그림의 큰 네모) -->
+    <div id="memoDisplayArea" class="memo-display">
+    </div>
+
+    <!-- 하단 버튼 패널 (그림의 4개 버튼) -->
+    <div class="memo-button-panel">
+        <button class="control-btn" onclick="startVoiceInput()">음성</button>
+        <button class="control-btn" onclick="startChatInput()">문자</button>
+        <button class="control-btn" onclick="startDrawingInput()">삭제</button>
+        <button class="control-btn save-btn" onclick="saveCurrentMemo()">저장</button>
+    </div>
+</div>
+
+<!-- 간단한 스타일 (기존 사이트와 어울리도록) -->
+<style>
+	.memo-display {
+        width: 100%; /* 기존 상단 라인과 동일하게 가로 폭 맞춤 */
+        height: 60px; /* 기존보다 살짝 더 아담한 높이 */
+        max-height: 100px; /* 내용이 늘어나도 너무 커지지 않도록 제한 */
+        margin: 8px 0;
+        padding: 8px 12px;
+        border: 2px solid #4CAF50; 
+        border-radius: 8px;
+        background-color: #fff;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start; /* 이미지나 텍스트가 무조건 맨 위로 붙도록 설정 */
+        align-items: flex-start;
+        overflow-y: auto; /* 내용이 많아지면 안에서 스크롤 */
+        font-size: 0.95rem;
+        color: #333;
+        box-sizing: border-box;
+    }
+    .hidden { display: none !important; }
+
+    /* 헤더 */
+    .memo-header {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        background-color: #f8f8f8;
+        border-bottom: 1px solid #ddd;
+    }
+    .back-btn {
+        /* --- 투명도 관련 속성 제거 및 초기화 --- */
+    opacity: 1 !important;            /* 투명도 완전 불투명 (0.0 ~ 1.0) */
+    visibility: visible !important;   /* 숨김 처리 해제 */
+    background-color: #ddd !important; /* 버튼 배경색을 확실하게 지정 (투명하지 않은 색) */
+    
+    /* --- 시인성 확보를 위한 추가 설정 --- */
+    color: #333 !important;           /* 버튼 글자색 (배경색과 대비되는 색) */
+    border: 1px solid #999 !important; /* 버튼 테두리 */
+    filter: none !important;          /* 혹시 모를 투명 필터 제거 */
+    
+    /* --- 위치 및 배치 설정 --- */
+    display: inline-block !important; /* 강제 표시 */
+    z-index: 9999 !important;         /* 다른 요소보다 항상 위로 */
+    position: relative;               /* 필요시 absolute 등으로 변경 가능 */
+    
+    /* 기타 버튼 스타일링 */
+    padding: 8px 16px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    border-radius: 4px;
+    box-sizing: border-box;
+    margin-right: 10px; /* 다른 요소와의 간격 */
+    }
+    .memo-header h2 { margin: 0; font-size: 18px; }
+    /* 기록 표시 영역 확대 및 시인성 개선 */
+    .memo-display {
+        width: 100% !important;
+        min-height: 380px !important;      /* 👈 박스 기본 길이를 더 길게 확장했습니다 */
+        max-height: 70vh !important;       /* 👈 화면에 맞춰 더 높이 늘어나도록 설정 */
+        padding: 10px 14px !important;     /* 👈 상하 여백을 줄여서 글자가 위로 바짝 붙게 함 */
+        border: 2px solid #4CAF50; 
+        border-radius: 8px;
+        background-color: #fff;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start !important; /* 👈 내용이 무조건 위쪽부터 차곡차곡 쌓이도록 강제 */
+        align-items: stretch !important;
+        overflow-y: auto !important;       /* 내용이 많아지면 안쪽 스크롤 */
+        font-size: 1.1rem;
+        color: #333;
+        box-sizing: border-box;
+    }
+
+    /* 각 항목의 상단 여백을 줄여서 위쪽 공간 활용도 높이기 */
+    .memo-item {
+        margin: 0 0 10px 0 !important;
+        padding: 10px !important;
+        background-color: #f9f9f9;
+        border-radius: 6px;
+        border-bottom: 1px solid #e0e0e0 !important;
+    }
+
+    /* 하단 버튼 패널 */
+    .memo-button-panel {
+        display: flex;
+        justify-content: space-around;
+        padding: 15px;
+        background-color: #f8f8f8;
+        border-top: 1px solid #ddd;
+        gap: 10px; /* 버튼 사이 간격 */
+    }
+    .control-btn {
+        flex: 1; /* 버튼 너비를 균등하게 */
+        padding: 12px;
+        font-size: 16px;
+        font-weight: bold;
+        color: #333;
+        background-color: #e0e0e0;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .control-btn:hover { background-color: #d0d0d0; }
+    .save-btn {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+    }
+    .save-btn:hover { background-color: #45a049; }
+.memoDisplayArea {
+    /* 모바일에서 터치/스크롤이 자연스럽게 작동하도록 설정 */
+    touch-action: pan-y;         /* 세로 스크롤은 허용하되 제스처 충돌 방지 */
+    -webkit-overflow-scrolling: touch; /* 아이폰/모바일 크롬에서 부드러운 스크롤 */
+    pointer-events: auto !important;   /* 마우스 및 터치 이벤트 강제 활성화 */
+    user-select: text;           /* 텍스트 선택 가능하게 설정 */
+}
+</style>
+
+    <script>
+// 문자 디스플레이 시작 ===============================================================
+const memoDisplayArea = document.getElementById("memoDisplayArea");
+
+if (memoDisplayArea) {
+    // PC 마우스 클릭 대응
+    memoDisplayArea.addEventListener("click", (e) => {
+        console.log("창이 마우스로 클릭되었습니다.");
+        // 필요한 추가 동작 (예: 입력 포커스 등)
+    });
+
+    // 모바일 터치 대응
+    memoDisplayArea.addEventListener("touchstart", (e) => {
+        console.log("창이 모바일 터치되었습니다.");
+        // 모바일에서 터치 시 반응할 로직
+    }, { passive: true }); // 성능 최적화를 위한 passive 옵션
+}
+// 문자 디스플레이 마지막 ===============================================================
+
+// 추가되는 라인===============================================================
+
+// 페이지가 로드될 때 localStorage에 저장된 데이터가 있으면 불러오기
+if (!window.SaveWord) {
+    const localData = localStorage.getItem('SaveWord');
+    window.SaveWord = localData ? JSON.parse(localData) : [];
+}
+
+// 1. 수첩 화면 열기 (MakeWord 버튼과 연결)
+function MakeAnihogo() {
+    const stageView = document.getElementById("stageView");
+    if (stageView) stageView.classList.add("hidden");
+
+    const memoPageView = document.getElementById("memoPageView");
+    if (memoPageView) memoPageView.classList.remove("hidden");
+}
+
+// 2. 수첩 화면 닫기 (← 버튼과 연결)
+function closeMemoPage() {
+    const memoPageView = document.getElementById("memoPageView");
+    if (memoPageView) memoPageView.classList.add("hidden");
+
+    const stageView = document.getElementById("stageView");
+    if (stageView) stageView.classList.remove("hidden");
+}
+
+// 3. [음성] 버튼: Web Speech API로 말하는 한국어 인식해서 화면에 추가하기
+function startVoiceInput() {
+    if (!('webkitSpeechRecognition' in window)) {
+        alert("이 브라우저는 음성 인식을 지원하지 않습니다. (크롬 권장)");
+        return;
+    }
+
+    const recognition = new webkitSpeechRecognition();
+    recognition.lang = 'ko-KR';
+    recognition.start();
+
+    recognition.onstart = () => {
+        console.log("음성 인식 시작...");
+    };
+
+    recognition.onresult = (event) => {
+        const spokenText = event.results[0][0].transcript;
+        addMemoItemToDisplay(spokenText); // 화면 박스에 추가
+    };
+
+    recognition.onerror = () => {
+        alert("음성 인식을 실패했습니다.");
+    };
+}
+
+
+function addMemoItemToDisplay(data) {
+    const displayArea = document.getElementById("memoDisplayArea");
+    if (!displayArea) {
+        console.error("memoDisplayArea 요소를 찾을 수 없습니다.");
+        return;
+    }
+
+    const itemDiv = document.createElement("div");
+    itemDiv.className = "memo-item";
+    itemDiv.style.margin = "0 0 10px 0";
+    itemDiv.style.padding = "10px";
+    itemDiv.style.backgroundColor = "#f9f9f9";
+    itemDiv.style.borderRadius = "6px";
+    itemDiv.style.borderBottom = "1px solid #e0e0e0";
+    itemDiv.style.color = "#333";
+
+    const jpParts = (data.jp || "").split(/\s+/);
+    const meanParts = (data.mean || "").split(/\s+/);
+    const readParts = (data.read || "").split(/\s+/);
+
+    const jpElement = document.createElement("div");
+    jpElement.className = "memo-jp";
+    jpElement.style.fontSize = "1.1rem";
+    jpElement.style.fontWeight = "bold";
+    jpElement.style.color = "#222";
+
+    const meanElement = document.createElement("div");
+    meanElement.className = "memo-mean";
+    meanElement.style.fontSize = "0.95rem";
+    meanElement.style.color = "#0066cc";
+    meanElement.style.marginTop = "4px";
+
+    const readElement = document.createElement("div");
+    readElement.className = "memo-read";
+    readElement.style.fontSize = "0.85rem";
+    readElement.style.color = "#666";
+    readElement.style.marginTop = "2px";
+    readElement.textContent = "음: ";
+
+    meanParts.forEach((meanToken, idx) => {
+        let jpToken = jpParts[idx] || "?";
+        let readToken = readParts[idx] || "?";
+
+        // 일본어 span 생성
+        const jpSpan = document.createElement("span");
+        jpSpan.textContent = jpToken + " ";
+
+        // 음 span 생성
+        const readSpan = document.createElement("span");
+        readSpan.textContent = readToken + " ";
+
+        // '?'인 경우에만 클릭 이벤트 부여
+        if (jpToken === "?" || jpToken.includes("?") || readToken === "?" || readToken.includes("?")) {
+            jpSpan.style.color = "#ff4444";
+            jpSpan.style.cursor = "pointer";
+            jpSpan.title = "클릭하여 단어 등록";
+
+            readSpan.style.color = "#ff4444";
+            readSpan.style.cursor = "pointer";
+            readSpan.title = "클릭하여 단어 등록";
+
+            // 클릭 시 팝업을 띄우는 공통 함수 연결
+            const clickAction = function() {
+                handleQuestionClick(meanToken, jpSpan, readSpan);
+            };
+
+            jpSpan.onclick = clickAction;
+            readSpan.onclick = clickAction;
+        }
+
+        jpElement.appendChild(jpSpan);
+
+        const meanSpan = document.createElement("span");
+        meanSpan.textContent = meanToken + " ";
+        meanElement.appendChild(meanSpan);
+
+        readElement.appendChild(readSpan);
+    });
+
+    itemDiv.appendChild(jpElement);
+    itemDiv.appendChild(meanElement);
+    itemDiv.appendChild(readElement);
+
+    displayArea.appendChild(itemDiv);
+    displayArea.scrollTop = displayArea.scrollHeight;
+}
+
+
+// 4. [문자] 버튼: 띄어쓰기 단위 매칭 및 모르는 단어는 위/아래 모두 '?' 처리하는 함수
+function startChatInput() {
+    const userInput = prompt("추가할 문장 또는 해석을 입력하세요:");
+    if (!userInput || userInput.trim() === "") return;
+
+    // 띄어쓰기(스페이스) 단위로 어절 쪼개기
+    const queryTokens = userInput.trim().split(/\s+/);
+
+    // 전체 데이터베이스 결합
+    let fullWordDatabase = [];
+    if (typeof window.externalSentencesDan !== 'undefined' && Array.isArray(window.externalSentencesDan)) {
+        fullWordDatabase = fullWordDatabase.concat(window.externalSentencesDan);
+    }
+    if (typeof window.SaveWord !== 'undefined' && Array.isArray(window.SaveWord)) {
+        fullWordDatabase = fullWordDatabase.concat(window.SaveWord);
+    }
+
+    let translatedJpParts = [];
+    let translatedReadParts = [];
+
+    // 각 띄어쓰기 조각별로 단어장(mean)과 매칭 시도
+    queryTokens.forEach(token => {
+        const cleanToken = token.toLowerCase();
+        
+        const foundWord = fullWordDatabase.find(item => {
+            const mean = item.mean ? String(item.mean).toLowerCase() : "";
+            return mean === cleanToken || mean.includes(cleanToken);
+        });
+
+        if (foundWord) {
+            // [매칭 성공] 단어장에 있는 경우 -> 일본어와 음 가져오기
+            translatedJpParts.push(foundWord.jp || token);
+            translatedReadParts.push(foundWord.read || "");
+        } else {
+            // [매칭 실패 / 모르는 단어] -> 위쪽과 아래쪽(음) 모두 "?" 로 표기
+            translatedJpParts.push("?");
+            translatedReadParts.push("?");
+        }
+    });
+
+    // 최종 3단 구조 데이터 조합
+    const memoData = {
+        jp: translatedJpParts.join(" "),       // 맨 위: 매칭된 일본어 및 모르는 부분은 "?"
+        mean: userInput,                        // 중간: 내가 입력한 원본 한글 문장
+        read: translatedReadParts.join(" ")     // 젤 밑: 매칭된 음 및 모르는 부분은 "?"
+    };
+
+    // 3단 구조로 화면에 출력
+    addMemoItemToDisplay(memoData);
+}
+
+
+function handleQuestionClick(targetMean, jpSpanTarget, readSpanTarget) {
+    // 1. 팝업으로 일본어 원문 입력 받기
+    const inputJp = prompt(`[단어 등록] '${targetMean}'의 일본어 원문을 입력하세요:`, "");
+    if (!inputJp || inputJp.trim() === "") {
+        return; // 취소 시 조용히 종료
+    }
+
+    // 2. 팝업으로 음(발음) 입력 받기
+    const inputRead = prompt(`[단어 등록] '${targetMean}'의 음(발음)을 입력하세요:`, "");
+    if (inputRead === null) {
+        return; // 취소 시 조용히 종료
+    }
+
+    const cleanJp = inputJp.trim();
+    const cleanMean = targetMean.trim();
+    const cleanRead = inputRead.trim() !== "" ? inputRead.trim() : cleanJp;
+
+    if (!window.SaveWord || !Array.isArray(window.SaveWord)) {
+        window.SaveWord = [];
+    }
+
+    window.SaveWord.push({
+        jp: cleanJp,
+        mean: cleanMean,
+        read: cleanRead
+    });
+    
+    // ⭐ [핵심 추가] 브라우저 로컬 스토리지에 영구 저장
+    localStorage.setItem('SaveWord', JSON.stringify(window.SaveWord));
+    
+    console.log("🔥 [SaveWord 저장 성공]:", window.SaveWord);
+
+    // 4. 화면의 '?' 요소들을 입력한 값으로 즉시 교체
+    if (jpSpanTarget) {
+        jpSpanTarget.textContent = cleanJp + " ";
+        jpSpanTarget.style.color = "#222";
+        jpSpanTarget.style.cursor = "default";
+        jpSpanTarget.onclick = null;
+    }
+
+    if (readSpanTarget) {
+        readSpanTarget.textContent = cleanRead + " ";
+        readSpanTarget.style.color = "#666";
+        readSpanTarget.style.cursor = "default";
+        readSpanTarget.onclick = null;
+    }
+
+    alert(`'${cleanMean}' 단어가 단어장에 성공적으로 저장되었습니다!`);
+}
+
+
+// 5. [지우개] 버튼: 디스플레이창의 내용을 깨끗하게 비우기 (지렁이 기능 대체)
+function clearMemoDisplay() {
+    const displayArea = document.getElementById("memoDisplayArea");
+    if (displayArea) {
+        displayArea.innerHTML = ""; // 안에 있는 텍스트나 항목들을 모두 초기화
+    }
+}
+
+// 6. [저장] 버튼: 매칭되지 않아 '?'가 포함된 항목만 골라 { jp, mean, read } 형태로 저장하는 함수
+function saveCurrentMemo() {
+    const displayArea = document.getElementById("memoDisplayArea");
+    if (!displayArea) {
+        console.error("memoDisplayArea 요소를 찾을 수 없습니다.");
+        alert("디스플레이 영역을 찾을 수 없습니다.");
+        return;
+    }
+
+    const items = displayArea.querySelectorAll(".memo-item");
+    if (items.length === 0) {
+        alert("저장할 내용이 없습니다.");
+        return;
+    }
+
+    if (!window.SaveWord) {
+        window.SaveWord = [];
+    }
+
+    let itemsToSave = [];
+
+    items.forEach((item, index) => {
+        const jpElement = item.querySelector(".memo-jp");
+        const meanElement = item.querySelector(".memo-mean");
+        const readElement = item.querySelector(".memo-read");
+
+        if (!jpElement || !meanElement) return;
+
+        // 1. 각 칸의 텍스트를 깔끔하게 가져옴 (사용자가 직접 수정한 내용 포함)
+        const jpText = jpElement.textContent.trim();
+        const meanText = meanElement.textContent.trim();
+        
+        let readText = "";
+        if (readElement) {
+            let rawRead = readElement.textContent.trim();
+            // "음:" 글자가 앞에 붙어있다면 깔끔하게 제거하고 순수 발음만 추출
+            if (rawRead.startsWith("음:")) {
+                rawRead = rawRead.replace("음:", "").trim();
+            }
+            readText = rawRead;
+        }
+
+        console.log(`[항목 ${index + 1}] 파싱된 데이터 -> 일본어: "${jpText}", 해석: "${meanText}", 음: "${readText}"`);
+
+        // 2. 빈 칸이 아니라면 무조건 저장 대상으로 수집
+        if (jpText !== "" && meanText !== "") {
+            itemsToSave.push({
+                jp: jpText,
+                mean: meanText,
+                read: readText !== "" ? readText : "?" // 음이 비어있으면 기본으로 ? 처리
+            });
+        }
+    });
+
+    if (itemsToSave.length === 0) {
+        alert("저장할 유효한 단어 데이터가 없습니다.");
+        return;
+    }
+
+    // 3. "저장하시겠습니까?" 확인 창 딱 1번 띄우기
+    const isConfirm = confirm(`총 ${itemsToSave.length}개의 항목을 단어장에 저장하시겠습니까?`);
+    if (!isConfirm) return; // 취소 누르면 중단
+
+    // 4. SaveWord 배열에 최종 일괄 밀어넣기
+    itemsToSave.forEach(newItem => {
+        window.SaveWord.push(newItem);
+    });
+
+    console.log("최종 저장 완료된 SaveWord 전체 목록:", window.SaveWord);
+    alert(`성공적으로 ${itemsToSave.length}개의 항목이 { 일본어, 해석, 음 } 형태로 저장되었습니다!`);
+}
+
+// 추가되는 마지막 라인===============================================================
+
+
+
+	function playJapanese(text) {
+    // 브라우저가 음성 합성을 지원하는지 확인
+    if (!('speechSynthesis' in window)) {
+        alert("이 브라우저는 음성 출력을 지원하지 않습니다.");
+        return;
+    }
+
+    // 기존에 재생 중이던 음성이 있다면 중지
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'ja-JP'; // 일본어로 설정
+    utterance.rate = 1.0;   // 배속 (0.5 ~ 2.0, 원하시면 속도 조절 가능)
+    utterance.pitch = 1.0;  // 음고 (목소리 톤)
+
+    // 브라우저에 등록된 일본어 목소리(Voice) 자동 지정
+    const voices = window.speechSynthesis.getVoices();
+    const jpVoice = voices.find(voice => voice.lang === 'ja-JP' || voice.lang === 'ja_JP');
+    if (jpVoice) {
+        utterance.voice = jpVoice;
+    }
+
+    window.speechSynthesis.speak(utterance);
+}
+
+	// 사용자가 화면을 처음 클릭하는 순간 BGM 자동 재생 승인 및 실행
+document.addEventListener('click', function() {
+    if (bgmAudio.paused) {
+        bgmAudio.src = bgmList[currentBgmIndex];
+        bgmAudio.play().catch(e => console.log("BGM 재생 대기중...", e));
+    }
+}, { once: true }); // 딱 한 번만 실행되도록 설정
+
+	// BGM 플레이리스트 무한 반복 설정 (bgm 폴더 내 1.mp3, 2.mp3 순환)
+        const bgmList = ['bgm/1.mp3', 'bgm/2.mp3'];
+        let currentBgmIndex = 0;
+        const bgmAudio = new Audio();
+        bgmAudio.volume = 0.045;
+
+        bgmAudio.addEventListener('ended', function() {
+            currentBgmIndex = (currentBgmIndex + 1) % bgmList.length;
+            bgmAudio.src = bgmList[currentBgmIndex];
+            bgmAudio.play().catch(e => console.log("BGM 자동 재생 대기중...", e));
+        });
+
+        function startBGM() {
+            if (bgmAudio.paused && !bgmAudio.src) {
+                bgmAudio.src = bgmList[currentBgmIndex];
+                bgmAudio.play().catch(e => console.log("BGM 재생 승인 대기중...", e));
+            }
+        }
+
+
+        let selectedMode = 'read';
+        let includeExtra = false;
+
+	// ⭐ 1. 외부 데이터를 담을 빈 extraPool 전역 변수 선언
+        let extraPool = [];
+
+        // ⭐ 2. data/sentences.js 파일을 동적으로 불러오는 함수
+       async function loadExtraSentencesFile() {
+    if (extraPool.length > 0) return true; // 이미 로드했으면 재사용
+
+    try {
+        // HTML 내부에 선언된 변수(sentences 또는 externalSentences)를 바로 가져옴
+        let rawData = window.sentences || window.externalSentences || (typeof sentences !== 'undefined' ? sentences : (typeof externalSentences !== 'undefined' ? externalSentences : []));
+        
+        if (Array.isArray(rawData) && rawData.length > 0) {
+            extraPool = rawData.map(item => ({
+                jp: String(item.jp || item.japanese || "").trim(),
+                mean: String(item.mean || item.korean || "").trim(),
+                read: String(item.read || item.발음 || "").trim()
+            }));
+        }
+
+        return extraPool.length > 0;
+    } catch (error) {
+        console.error("데이터 처리 실패:", error);
+        return false;
+    }
+}
+
+        function setMode(mode) {
+            selectedMode = mode;
+            document.getElementById("modeReadBtn").classList.toggle("active", mode === 'read');
+            document.getElementById("modeMeanBtn").classList.toggle("active", mode === 'mean');
+            document.getElementById("modeJpBtn").classList.toggle("active", mode === 'jp');
+        }
+
+        // ⭐ 3. 토글 버튼 클릭 시 실제 파일을 불러오도록 수정된 함수
+        async function toggleExtraSentences() {
+            const btn = document.getElementById("extraToggleBtn");
+            
+            if (!includeExtra) {
+                btn.innerText = "⏳ 파일 불러오는 중...";
+                let success = await loadExtraSentencesFile();
+                
+                if (!success || extraPool.length === 0) {
+                    alert("sentences.js 파일을 읽어오지 못했거나 데이터가 비어있습니다.");
+                    btn.innerText = "➕ 추가 300문장 파일 결합 (OFF)";
+                    return;
+                }
+                
+                includeExtra = true;
+                btn.classList.add("active");
+                btn.innerText = `➕ 추가 300문장 파일 결합 (ON: ${extraPool.length}문장)`;
+            } else {
+                includeExtra = false;
+                btn.classList.remove("active");
+                btn.innerText = "➕ 추가 300문장 파일 결합 (OFF)";
+            }
+            updateStageCounts();
+        }
+
+       function updateStageCounts() {
+    const extraCount = includeExtra ? extraPool.length : 0;
+document.getElementById("MakeWord").innerText = `${0 + extraCount} 문장`;
+document.getElementById("countWord").innerText = `${389 + extraCount} 문장`;
+    document.getElementById("count1").innerText = `${100 + extraCount} 문장`;
+    document.getElementById("count2").innerText = `${150 + extraCount} 문장`;
+    document.getElementById("count3").innerText = `${200 + extraCount} 문장`;
+    document.getElementById("count4").innerText = `${250 + extraCount} 문장`;
+    document.getElementById("count5").innerText = `${750 + extraCount} 문장`; // 👈 이 부분
+}
+
+        const pool1 = [
+            { jp: "わたし の なまえ は チョンドンホ です", mean: "저 의 이름 은 정동호 입니다", read: "와타시 노 나마에 와 쵼돈호 데스" },
+            { jp: "わたし は がくせい です", mean: "저 는 학생 입니다", read: "와타시 와 가쿠세이 데스" },
+            { jp: "つくえ の うえ に パン が あり ます", mean: "책상 의 위 에 빵 이 있다 ~합니다", read: "츠쿠에 노 우에 니 팡 가 아리 마스" },
+            { jp: "きょう は いい てんき です ね", mean: "오늘 은 좋은 날씨 네요", read: "쿄우 와 이이 텐키 데스 네" },
+            { jp: "いま なんじ です か", mean: "지금 몇시 입니 까?", read: "이마 난지 데스 카" },
+            { jp: "これ は わたし の ほん です", mean: "이것 은 저 의 책 입니다", read: "코레 와 와타시 노 혼 데스" },
+            { jp: "あそこ に いぬ が い ます", mean: "저기 에 개 가 있다 ~합니다", read: "아소코 니 이누 가 이 마스" },
+            { jp: "おちゃ を ください", mean: "녹차 를 주세요", read: "오챠 오 쿠다사이" },
+            { jp: "みず を のみ たい です", mean: "물 을 마시다 하고싶다 입니다", read: "미즈 오 노미 타이 데스" },
+            { jp: "きょう は いえ で やすみ ます", mean: "오늘 은 집 에서 쉽니다 ~합니다", read: "쿄우 와 이에 데 야스미 마스" },
+            { jp: "あした は ともだち と えいが を み ます", mean: "내일 은 친구 와 영화 를 보다 ~합니다", read: "아시타 와 토모다치 토 에이가 오 미 마스" },
+            { jp: "この りょうり は とても おいしい です", mean: "이 요리 는 아주 맛있다 입니다", read: "코노 료우리 와 토테모 오이시이 데스" },
+            { jp: "でんしゃ の じかん が おそい", mean: "전철 의 시간 이 늦다", read: "덴샤 노 지칸 가 오소이" },
+            { jp: "にほんご の べんきょう は たのしい", mean: "일본어 의 공부 는 즐겁다", read: "니혼고 노 벤쿄우 와 타노시이" },
+            { jp: "まいにち じかん を まもり ます", mean: "매일 시간 을 지킵다 ~합니다", read: "마이니치 지칸 오 마모리 마스" },
+            { jp: "すこし つかれ ました", mean: "조금 지치다 ~했습니다", read: "스코시 츠카레 마시타" },
+            { jp: "コヒ を いっぱい のみ ます", mean: "커피 를 한잔 마시다 ~합니다", read: "코히 오 잇빠이 노미 마스" },
+            { jp: "そら が あおくて きれい です", mean: "하늘 이 파랗고 예쁨 입니다", read: "소라 가 아오쿠테 키레이 데스" },
+            { jp: "あたらしい ふく を かい ました", mean: "새로운 옷 을 사다 ~했습니다", read: "아타라시이 후쿠 오 카이 마시타" },
+            { jp: "げんき に がんばり ましょう", mean: "건강 ~하게 힘냄 ~합시다", read: "겐키 니 간바리 마쇼우" }
+        ];
+
+        const pool2 = [
+            { jp: "きのう の よる は とても おもしろい えいが を み ました", mean: "어젯 의 밤 은 아주 재미있는 영화 를 보다 ~했습니다", read: "키노우 노 요루 와 토테모 오모시로이 에이가 오 미 마시타" },
+            { jp: "らいしゅう の どようび に ともだち と デート を し ます", mean: "다음주 의 토요일 에 친구 와 데이트 를 하다 ~합니다", read: "라이슈우 노 도요우비 니 토모다치 토 데토 오 시 마스" },
+            { jp: "としょかん で じぶん の ほん を よみ ました", mean: "도서관 에서 자신 의 책 을 읽다 ~했습니다", read: "토쇼칸 데 지분 노 혼 오 요미 마시타" },
+            { jp: "きょう の かいぎ は ごご に よてい され てい ます", mean: "오늘 의 회의 는 오후 에 예정 되어 ~합니다", read: "쿄우 노 카이기 와 고고 니 요테이 사레 테이 마스" },
+            { jp: "あめ が ふって いる ので かさ を もって いき ます", mean: "비 가 내리고 있다 ~때문에 우산 을 가지고 가다 ~합니다", read: "아메 가 훗테 이루 노데 카사 오 못테 이키 마스" },
+            { jp: "まいにち ごじゅっぷん かん のんびり さんぽ を し ます", mean: "매일 50분 동안 느긋하게 산책 을 하다 ~합니다", read: "마이니치 고쥬분 칸 논비리 산포 오 시 마스" },
+            { jp: "べんり な アプリ を スマホ に インストル し ました", mean: "편리 한 앱 을 스마트폰 에 설치 하다 ~했습니다", read: "벤리 나 아푸리 오 스마호 니 인스토루 시 마시타" },
+            { jp: "りょこう の けいかく を たてる の は たのしい です", mean: "여행 의 계획 을 세우다 것 은 즐겁다 ~입니다", read: "료코우 노 케이카쿠 오 타테루 노 와 타노시이 데스" },
+            { jp: "しごと が おわったら おいしい ラメン を たべ に いき ます", mean: "일 이 끝나면 맛있다 라면 을 먹다 ~하러 가다 ~합니다", read: "시고토 가 오왓타라 오이시이 라멘 오 타베 니 이키 마스" },
+            { jp: "こんしゅう の しゅまつ は かぞく と いっしょに すごし ます", mean: "이번주 의 주말 은 가족 ~와 함께 보내다 ~합니다", read: "콘슈우 노 슈마츠 와 카조쿠 토 잇쇼니 스고시 마스" }
+        ];
+
+        const pool3 = [
+            { jp: "じぶん の かんがえ を あいて に わかり やすく せつめい する の は むずかしい", mean: "자신 의 생각 을 상대방 에게 알기 쉽게 설명 하다 ~하는 것 은 어렵다", read: "지분 노 캉가에 오 아이테 니 와카리 야스쿠 세츠메이 스루 노 와 무즈카시이" },
+            { jp: "もんだい の かいけつさく を みつける ため に みんな で ぎろん し ました", mean: "문제 의 해결책 을 찾아내다 하다 위해 모두 에서 의논 하다 ~했습니다", read: "몬다이 노 카이케츠사쿠 오 미츠케루 타메 니 민나 데 기론 시 마시타" },
+            { jp: "けいけん が ふえる に つれて しや が ひろがり ます", mean: "경험 이 증가하다 에 따라서 시야 가 넓어지다 ~합니다", read: "케이켄 가 후에루 니 츠레테 시야 가 히로가리 마스" },
+            { jp: "じかん の かんり を てってい すれば もっと おおく の こと が でき ます", mean: "시간 의 관리 를 철저히 하면 더욱 많은것 의 일 이 할수있다 ~합니다", read: "지칸 노 칸리 오 텟테이 스레바 못토 오오쿠 노 코토 가 데키 마스" },
+            { jp: "たかい もくひょう を かかげて いっぽずつ すすんで いき ます", mean: "높은 목표 를 내걸고 한걸음씩 나아가다 가다 ~합니다", read: "타카이 모쿠효우 오 카카게루  잇포즈츠 스슨데 이키 마스" }
+        ];
+
+        const pool4 = [
+            { jp: "じんせい は たび であり その たび を どのように すごす か は じぶん しだい です", mean: "인생 은 여행 이며 그 여행 을 어떻게 보낼다 ~할지 는 자기 에달려있다 ~입니다", read: "진세이 와 타비 데아리 소노 타비 오 도노요우니 스고스 카 와 지분 시다이 데스" },
+            { jp: "しんらいかん を きずく ため に は まいにち の まじめな たいど が かか せ ません", mean: "신뢰감 을 쌓다 ~를위함 에 는 매일 의 성실한 태도 가 거르다 가능 ~않습니다", read: "신라이칸 오 키즈쿠 타메 니 와 마이니치 노 마지메나 타이도 가 카카세 마센" },
+            { jp: "せかい じゅう の ひとたち と つながる こと が できる じだい に なり ました", mean: "세계 전체 의 사람들 과 연결되다 ~하는것 이 가능 시대 에 되다 ~했습니다", read: "세카이 쥬우 노 히토타치 토 츠나가루 코토 가 데키루 지다이 니 나리 마시타" }
+        ];
+
+        const stage5ActionPool = [
+            { jp: "にほんご の べんきょう を する", mean: "일본어 의 공부 를 하는", read: "니혼고 노 벤쿄우 오 스루" },
+            { jp: "まいにち えいご を はなす", mean: "매일 영어 를 말하는", read: "마이니치 에이고 오 하나스" },
+            { jp: "じぶん の みらい を かく", mean: "자신 의 미래 를 그리는", read: "지분 노 미라이 오 카쿠" },
+            { jp: "たいせつ な じかん を まもる", mean: "소중 한 시간 을 지키는", read: "타이세츠 나 지칸 오 마모루" },
+            { jp: "こころ を こめて よむ", mean: "마음 을 담아 읽는", read: "코코로 오 코메테 요무" },
+            { jp: "すこしずつ まえ に すすむ", mean: "조금씩 앞에 으로 나아가는", read: "스코시즈츠 마에 니 스스무" },
+            { jp: "ていねい に もじ を かく", mean: "정성 하게 글자 를 쓰는", read: "테이네이 니 모지 오 카쿠" },
+            { jp: "たのしく かいわ を する", mean: "즐겁게 회화 를 하는", read: "타노시쿠 카이와 오 스루" },
+            { jp: "げんき に あいさつ を する", mean: "건강 하게 인사 를 하는", read: "겐키 니 아이사츠 오 스루" },
+            { jp: "あたら しい ことり を かう", mean: "새로다 운 작은새 를 키우는", read: "아타라시이 코토리 오 카우" },
+            { jp: "まいにち あたら しい うえ ふく を きる", mean: "매일 새로다 운 위에 옷 을 입는", read: "마이니치 아타라 시이 우에 후쿠 오 키루" },
+            { jp: "おちゃ を いっぱい のむ", mean: "녹차 를 한 잔 마시는", read: "오챠 오 잇빠이 노무" },
+            { jp: "しごと の けいかく を たてる", mean: "일 의 계획 을 세우는", read: "시고토 노 케이카쿠 오 타테루" },
+            { jp: "べんり な アプリ を つくる", mean: "편리한 앱 을 만드는", read: "벤리 나 아푸리 오 츠쿠루" },
+            { jp: "ともだち と えいが を みる", mean: "친구 와 영화 를 보는", read: "토모다치 토 에이가 오 미루" },
+            { jp: "おいしい らいす を たべる", mean: "맛있는 밥 을 먹는", read: "오이시이 라이스 오 타베루" },
+            { jp: "へや の そうじ を する", mean: "방 의 청소 를 하는", read: "헤야 노 소우지 오 스루" },
+            { jp: "しずか に ほん を よむ", mean: "조용 하게 책 을 읽는", read: "시즈카 니 혼 오 요무" },
+            { jp: "そら を みあげ て やすむ", mean: "하늘 을 올려다보다 고 쉬는", read: "소라 오 미아게 테 야스무" },
+            { jp: "きょう の きろく を のこす", mean: "오늘 의 기록 을 남기는", read: "쿄우 노 키로쿠 오 노코스" }
+        ];
+
+        const endingActionPool = [
+            { jp: "し ます", mean: "하다 합니다", read: "시 마스" },
+            { jp: "し ません", mean: "하다 않합니다", read: "시 마센" },
+            { jp: "し ます か", mean: "하다 합니다 인가?", read: "시 마스 카" },
+            { jp: "して い ます", mean: "하고 있다 입니다", read: "시테 이 마스" },
+            { jp: "して い ません", mean: "하고 있다 않습니다", read: "시테 이 마센" },
+            { jp: "でき ます", mean: "할수있다 입니다", read: "데키 마스" },
+            { jp: "でき ません", mean: "할수있다  없습니다", read: "데키 마센" },
+            { jp: "する でしょう", mean: "하다 것입니다.", read: "스루 데쇼우" },
+            { jp: "する つもり です", mean: "하다 예정 입니다", read: "스루 츠모리 데스" },
+            { jp: "しようと し ます", mean: "하려 하다 합니다", read: "시요우 토 시 마스" },
+            { jp: "つづけ ます", mean: "계속 합니다", read: "츠즈케 마스" },
+            { jp: "つづけ ません", mean: "계속 안합니다", read: "츠즈케 마센" },
+            { jp: "て み ます", mean: "해 보다 입니다", read: "테 미 마스" },
+            { jp: "ちょうせん し ます", mean: "도전 하다 입니다", read: "쵸우센 시 마스" },
+            { jp: "ぼうけん し ます", mean: "모험 하다 입니다", read: "보우켄 시 마스" },
+            { jp: "わすれ ません", mean: "잊다 않습니다", read: "와스레 마센" },
+            { jp: "たいせつに し ます", mean: "소중히 하다 입니다", read: "타이세츠니 시 마스" },
+            { jp: "えがおで いき ます", mean: "웃으며 가다 합니다", read: "에가오데 이키 마스" }
+        ];
+
+       function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+function startWordPractice() {
+    console.log("단어 연습 모드 시작");
+
+    // 1. 기본으로 가져올 단어 풀 확인 (예: 기존에 있던 데이터나 danList)
+    let baseList = (typeof currentStageSentences !== 'undefined' && Array.isArray(currentStageSentences) && currentStageSentences.length > 0) 
+                    ? currentStageSentences 
+                    : [];
+
+    // 2. 추가할 180개 단어 데이터 가져오기
+    let addData = window.danList || window.externalSentencesDan || window.externalSentences || [];
+    if (addData.length === 0 && typeof danList !== 'undefined') addData = danList;
+
+    // 3. 만약 기존 리스트가 아예 비어있었다면 addData로 시작, 아니면 기존 리스트에 addData를 누적(concat)
+    let rawData = baseList.length > 0 ? baseList : addData;
+
+    // 4. 추가 버튼(includeExtra)이 켜져있다면 extraPool도 함께 누적
+    if (typeof includeExtra !== 'undefined' && includeExtra && typeof extraPool !== 'undefined' && extraPool.length > 0) {
+        rawData = rawData.concat(extraPool);
+    }
+    
+    // 만약 이미 baseList가 있는데여기에 danList를 버튼 누를 때마다 추가하고 싶다면 아래와 같이 명시적으로 더해줄 수도 있습니다.
+    // (예: 단어 추가 버튼을 누를 때마다 180개가 기존 목록에 계속 더해지게 하려면)
+    /*
+    if (addData.length > 0) {
+        rawData = baseList.concat(addData);
+    }
+    */
+
+    if (Array.isArray(rawData) && rawData.length > 0) {
+        currentStageSentences = shuffleArray(rawData.map(item => ({
+            jp: String(item.jp || "").trim(),
+            mean: String(item.mean || "").trim(),
+            read: String(item.read || "").trim()
+        })));
+
+        const countSpan = document.getElementById("countWord");
+        if (countSpan) {
+            countSpan.textContent = `${currentStageSentences.length} 문장`;
+        }
+
+        currentIndex = 0;
+        if (stageTitle) {
+            stageTitle.innerText = `단어 연습 (총 ${currentStageSentences.length}문장)`;
+        }
+
+        if (stageView) stageView.classList.add("hidden");
+        if (practiceView) practiceView.classList.remove("hidden");
+
+        if (selectedMode === 'jp') {
+            if (canvasSectionWrapper) canvasSectionWrapper.classList.remove("hidden");
+        } else {
+            if (canvasSectionWrapper) canvasSectionWrapper.classList.add("hidden");
+        }
+
+        loadSentence();
+
+    } else {
+        alert("데이터를 찾지 못했습니다. HTML 내부에 danList 배열이 올바르게 정의되어 있는지 확인해주세요.");
+    }
+}
+
+	       
+	function generateStage1() {
+            let list = [];
+            // pool1 전체 내용이 정확히 2번 반복되도록 수정
+            for (let i = 0; i < pool1.length * 2; i++) {
+                let base = pool1[i % pool1.length];
+                list.push({ jp: base.jp, mean: base.mean, read: base.read });
+            }
+
+// ⭐ 외부 파일이 ON 되어 있고 데이터가 들어있다면 확실하게 합쳐줍니다!
+            if (includeExtra && extraPool.length > 0) {
+                list = list.concat(extraPool);
+            }
+
+            return shuffleArray(list);
+        }
+
+        function generateStage2() {
+            let list = [];
+            for (let i = 0; i < pool1.length * 2; i++) {
+                let base = pool1[i % pool1.length];
+                list.push({ jp: base.jp, mean: base.mean, read: base.read });
+            }
+            for (let i = 0; i < pool2.length * 2; i++) {
+                let base = pool2[i % pool2.length];
+                list.push({ jp: base.jp, mean: base.mean, read: base.read });
+            }
+
+// ⭐ 외부 파일이 ON 되어 있고 데이터가 들어있다면 확실하게 합쳐줍니다!
+            if (includeExtra && extraPool.length > 0) {
+                list = list.concat(extraPool);
+            }
+
+
+            return shuffleArray(list);
+        }
+
+        function generateStage3() {
+            let list = [];
+            for (let i = 0; i < pool1.length * 2; i++) {
+                let base = pool1[i % pool1.length];
+                list.push({ jp: base.jp, mean: base.mean, read: base.read });
+            }
+            for (let i = 0; i < pool2.length * 2; i++) {
+                let base = pool2[i % pool2.length];
+                list.push({ jp: base.jp, mean: base.mean, read: base.read });
+            }
+            for (let i = 0; i < pool3.length * 2; i++) {
+                let base = pool3[i % pool3.length];
+                list.push({ jp: base.jp, mean: base.mean, read: base.read });
+            }
+
+// ⭐ 외부 파일이 ON 되어 있고 데이터가 들어있다면 확실하게 합쳐줍니다!
+            if (includeExtra && extraPool.length > 0) {
+                list = list.concat(extraPool);
+            }
+
+
+            return shuffleArray(list);
+        }
+
+        function generateStage4() {
+            let list = [];
+            for (let i = 0; i < pool1.length * 2; i++) {
+                let base = pool1[i % pool1.length];
+                list.push({ jp: base.jp, mean: base.mean, read: base.read });
+            }
+            for (let i = 0; i < pool2.length * 2; i++) {
+                let base = pool2[i % pool2.length];
+                list.push({ jp: base.jp, mean: base.mean, read: base.read });
+            }
+            for (let i = 0; i < pool3.length * 2; i++) {
+                let base = pool3[i % pool3.length];
+                list.push({ jp: base.jp, mean: base.mean, read: base.read });
+            }
+            for (let i = 0; i < pool4.length * 2; i++) {
+                let base = pool4[i % pool4.length];
+                list.push({ jp: base.jp, mean: base.mean, read: base.read });
+            }
+
+// ⭐ 외부 파일이 ON 되어 있고 데이터가 들어있다면 확실하게 합쳐줍니다!
+            if (includeExtra && extraPool.length > 0) {
+                list = list.concat(extraPool);
+            }
+
+
+            return shuffleArray(list);
+        }
+
+        function generateStage5() {
+            let list = [];
+            // stage5ActionPool 전체가 정확히 2번 돌도록 설정
+            let needed = stage5ActionPool.length * 2;
+            for (let i = 1; i <= needed; i++) {
+                let front = stage5ActionPool[(i - 1) % stage5ActionPool.length];
+                let ending = endingActionPool[Math.floor(Math.random() * endingActionPool.length)];
+                list.push({
+                    jp: `${front.jp} れんしゅう ${ending.jp}`,
+                    mean: `${front.mean} 연습 ${ending.mean}`,
+                    read: `${front.read} 렌슈우 ${ending.read}`
+                });
+            }
+            if (includeExtra) list = list.concat(extraPool);
+            return shuffleArray(list);
+        }
+
+        let currentStageSentences = [];
+        let currentIndex = 0;
+        let isWaitingForNext = false;
+        
+	const stageView = document.getElementById("stageView");
+        const practiceView = document.getElementById("practiceView");
+        const canvasSectionWrapper = document.getElementById("canvasSectionWrapper");
+        const stageTitle = document.getElementById("stageTitle");
+        
+        const slotTop = document.getElementById("slotTop");
+        const slotMid = document.getElementById("slotMid");
+        const slotBottom = document.getElementById("slotBottom");
+        
+        const userInput = document.getElementById("userInput");
+        const feedbackMsg = document.getElementById("feedbackMsg");
+        const progressText = document.getElementById("progressText");
+        const actionBtn = document.getElementById("actionBtn");
+
+	
+
+// 단어 연습 모드 전용 세팅 및 화면 전환 함수
+function initWordPracticeMode(data) {
+    // 데이터 형식을 기존 구조(jp, mean, read)에 맞게 매핑
+    currentStageSentences = data.map(item => ({
+        jp: String(item.jp || "").trim(),
+        mean: String(item.mean || "").trim(),
+        read: String(item.read || "").trim()
+    }));
+
+    if (currentStageSentences.length === 0) {
+        alert("연습할 단어 데이터가 비어있습니다.");
+        return;
+    }
+
+    currentIndex = 0;
+    
+    if (stageTitle) {
+        stageTitle.innerText = `단어 연습 (Ending Action 풀 - 총 ${currentStageSentences.length}문장)`;
+    }
+
+    // 화면 전환 처리
+    if (stageView) stageView.classList.add("hidden");
+    if (practiceView) practiceView.classList.remove("hidden");
+
+    if (selectedMode === 'jp') {
+        if (canvasSectionWrapper) canvasSectionWrapper.classList.remove("hidden");
+    } else {
+        if (canvasSectionWrapper) canvasSectionWrapper.classList.add("hidden");
+    }
+
+    loadSentence();
+}
+
+
+
+        function startStage(stageNum) {
+            let stageData = {
+		1: generateStage1(),
+                2: generateStage2(),
+                3: generateStage3(),
+                4: generateStage4(),
+                5: generateStage5()
+            };
+
+            currentStageSentences = stageData[stageNum];
+            if (!currentStageSentences || currentStageSentences.length === 0) return;
+
+            currentIndex = 0;
+            stageTitle.innerText = `${stageNum}단계 연습 (총 ${currentStageSentences.length}문장)`;
+
+            stageView.classList.add("hidden");
+            practiceView.classList.remove("hidden");
+
+            if (selectedMode === 'jp') {
+                canvasSectionWrapper.classList.remove("hidden");
+            } else {
+                canvasSectionWrapper.classList.add("hidden");
+            }
+
+            loadSentence();
+        }
+
+        function returnToMenu() {
+            practiceView.classList.add("hidden");
+            canvasSectionWrapper.classList.add("hidden");
+            stageView.classList.add("hidden");
+            location.reload();
+        }
+
+        function loadSentence() {
+            // ⭐ 핵심: 다음 문장으로 넘어가기 직전의 '현재 스크롤 위치'를 확실하게 기억해 둠
+            const savedScrollY = window.scrollY || window.pageYOffset;
+
+            isWaitingForNext = false;
+            feedbackMsg.innerText = "";
+            userInput.value = "";
+
+            if (currentIndex >= currentStageSentences.length) {
+                practiceView.innerHTML = `
+                    <h2>🎉 훈련 완료!</h2>
+                    <p style="font-size: 1.2rem; color: #4dabf7; margin-bottom: 20px;">스테이지를 멋지게 완주했습니다!</p>
+                    <button onclick="location.reload()" style="padding: 12px 25px; font-size: 1rem; background: #ff6b6b; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">스테이지 선택으로 돌아가기</button>
+                `;
+                canvasSectionWrapper.classList.add("hidden");
+                return;
+            }
+
+            const current = currentStageSentences[currentIndex];
+            progressText.innerText = `문장 ${currentIndex + 1} / ${currentStageSentences.length}`;
+            
+            clearCanvas();
+            
+            actionBtn.innerText = "정답화면";
+            
+            isEraser = false;
+            const eraserBtn = document.getElementById("eraserBtn");
+            if(eraserBtn) {
+                eraserBtn.classList.remove("active-tool");
+                eraserBtn.innerText = "🧹 지우개 모드";
+            }
+
+            if (selectedMode === 'jp') {
+                userInput.disabled = true;
+                userInput.placeholder = "일본어 입력 모드: 아래 넓은 캔버스에 직접 적으며 연습하세요";
+                canvasSectionWrapper.classList.remove("hidden");
+            } else {
+                userInput.disabled = false;
+                canvasSectionWrapper.classList.add("hidden");
+                userInput.placeholder = "전체 문장을 타이핑한 후 엔터키를 누르세요";
+            }
+
+            if (selectedMode === 'read') {
+                slotTop.innerHTML = `<div class="row-label">일본어 원문 (기준)</div><div class="box-top-target">${current.jp}</div>`;
+                slotMid.innerHTML = `<div class="row-label">한국어 해석</div><div class="box-mid">${current.mean}</div>`;
+                slotBottom.innerHTML = `<div class="row-label">타이핑할 음 (발음 비교)</div><div class="box-bottom-input" id="activeTargetText">${current.read}</div>`;
+            } else if (selectedMode === 'mean') {
+                slotTop.innerHTML = `<div class="row-label">일본어 원문 (기준)</div><div class="box-top-target">${current.jp}</div>`;
+                slotMid.innerHTML = `<div class="row-label">발음 음</div><div class="box-mid">${current.read}</div>`;
+                slotBottom.innerHTML = `<div class="row-label">타이핑할 한국어 해석</div><div class="box-bottom-input" id="activeTargetText">${current.mean}</div>`;
+            } else if (selectedMode === 'jp') {
+                slotTop.innerHTML = `<div class="row-label">발음 음 (기준)</div><div class="box-top-target">${current.read}</div>`;
+                slotMid.innerHTML = `<div class="row-label">한국어 해석 (기준)</div><div class="box-mid">${current.mean}</div>`;
+                slotBottom.innerHTML = `<div class="row-label">연습할 일본어 원문 (아래 캔버스에 직접 필기)</div><div class="box-bottom-input" id="activeTargetText">${current.jp}</div>`;
+            }
+
+            if (selectedMode !== 'jp') {
+                // 모바일 브라우저가 포커스 때문에 스크롤을 튀게 만드는 현상을 억제 ({ preventScroll: true })
+                userInput.focus({ preventScroll: true });
+            }
+
+            // ⭐ 핵심: 문장 로드가 끝나자마자 브라우저가 스크롤을 건드리더라도 아까 기억해 둔 위치로 즉시 강제 원상복구
+            window.scrollTo({
+                top: savedScrollY,
+                behavior: 'instant' // 딜레이 없이 즉시 고정
+            });
+            
+            // 혹시 브라우저가 한 박자 늦게 스크롤을 건드릴 경우를 대비해 아주 짧은 틈을 두고 한 번 더 확실하게 잡아줌
+            setTimeout(() => {
+                window.scrollTo({ top: savedScrollY, behavior: 'instant' });
+            }, 10);
+        }
+
+        userInput.addEventListener("input", function() {
+            if (isWaitingForNext || selectedMode === 'jp') return;
+
+            const userVal = userInput.value;
+            const current = currentStageSentences[currentIndex];
+            if (!current) return;
+            
+            let targetVal = current.read;
+            if (selectedMode === 'mean') targetVal = current.mean;
+
+            let htmlResult = "";
+
+            for (let i = 0; i < targetVal.length; i++) {
+                if (i < userVal.length) {
+                    if (userVal[i] === targetVal[i]) {
+                        htmlResult += `<span class="char-correct">${targetVal[i]}</span>`;
+                    } else {
+                        htmlResult += `<span class="char-incorrect">${targetVal[i]}</span>`;
+                    }
+                } else {
+                    htmlResult += `<span class="char-missing">${targetVal[i]}</span>`;
+                }
+            }
+            
+            const targetElement = document.getElementById("activeTargetText");
+            if (targetElement) {
+                targetElement.innerHTML = htmlResult;
+            }
+        });
+
+        // 엔터키 입력 시 처리 (음성 재생/대기 중일 때는 엔터키 무시)
+        userInput.addEventListener("keydown", function(event) {
+            if (event.key === "Enter" && selectedMode !== 'jp') {
+                // ⭐ 입력창이 비활성화(disabled) 상태라면 엔터키를 눌러도 무시합니다.
+                if (userInput.disabled) {
+                    event.preventDefault();
+                    return;
+                }
+                
+                event.preventDefault(); 
+                checkAndSubmit();
+            }
+        });
+
+        function checkAndSubmit() {
+            // 양쪽 끝 공백을 제거하여 비교 (입력값과 정답 모두 trim 적용)
+            const userVal = userInput.value.trim();
+            const current = currentStageSentences[currentIndex];
+            if (!current) return;
+            
+            let targetVal = (selectedMode === 'mean' ? current.mean : current.read).trim();
+
+            if (isWaitingForNext) {
+                if (userVal === targetVal) {
+                    isWaitingForNext = false;
+                    feedbackMsg.style.color = "#51cf66";
+                    feedbackMsg.innerText = "✨ 정답입니다! 다음 문장으로 넘어갑니다.";
+                    
+                    // ⭐ 정답일 때 일본어 음성 자동 출력 (오답 후 수정 맞춤 시)
+                    playJapanese(current.jp);
+                    userInput.disabled = true; // ⭐ 음성 재생 중 입력 및 엔터 차단
+
+                    setTimeout(() => {
+                        currentIndex++;
+                        loadSentence();
+                    }, 9000); // 9초 대기
+                } else {
+                    currentIndex++;
+                    loadSentence();
+                }
+                return;
+            }
+
+            if (userVal === targetVal) {
+                feedbackMsg.style.color = "#51cf66";
+                feedbackMsg.innerText = "✨ 정답입니다! 다음 문장으로 넘어갑니다.";
+                
+                // ⭐ 정답일 때 일본어 음성 자동 출력 (한 번에 맞췄을 시)
+                playJapanese(current.jp);
+                userInput.disabled = true; // ⭐ 음성 재생 중 입력 및 엔터 차단
+
+                setTimeout(() => {
+                    currentIndex++;
+                    loadSentence();
+                }, 5500); // ⭐ 여기도 1500에서 9000으로 동일하게 변경 완료!
+            } else {
+                feedbackMsg.style.color = "#fa5252";
+                feedbackMsg.innerText = "❌ 틀린 글자가 있습니다. 수정 후 엔터를 누르거나, 무시하고 엔터를 한 번 더 누르면 다음으로 넘어갑니다.";
+
+                isWaitingForNext = true;
+            }
+        }
+
+        userInput.addEventListener("input", function() {
+            if (isWaitingForNext) {
+                const current = currentStageSentences[currentIndex];
+                if (current) {
+                    const userVal = userInput.value;
+                    let targetVal = (selectedMode === 'mean' ? current.mean : current.read);
+                    if (userVal === targetVal) {
+                        isWaitingForNext = false;
+                        feedbackMsg.style.color = "#51cf66";
+                        feedbackMsg.innerText = "✨ 완벽합니다! 엔터를 누르면 넘어갑니다.";
+                    }
+                }
+            }
+        });
+
+      const canvas = document.getElementById("drawCanvas");
+        const ctx = canvas.getContext("2d");
+        let isDrawing = false;
+        let isEraser = false;
+        const penWidth = 2; 
+
+        ctx.strokeStyle = "#000000";
+        ctx.lineWidth = penWidth;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+
+        function toggleEraser() {
+            isEraser = !isEraser;
+            const btn = document.getElementById("eraserBtn");
+            if (isEraser) {
+                btn.classList.add("active-tool");
+                btn.innerText = "✏️ 펜 모드로 전환";
+            } else {
+                btn.classList.remove("active-tool");
+                btn.innerText = "🧹 지우개 모드";
+            }
+        }
+
+        // ⭐ 마우스와 모바일 터치 좌표를 모두 처리하는 공용 함수
+        function getTouchPos(canvas, e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            // 터치 이벤트일 경우 첫 번째 손가락 좌표(e.touches[0]), 마우스일 경우 e.clientX 사용
+            const clientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches && e.touches.length > 0 ? e.touches[0].clientY : e.clientY;
+            
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        // 그리기/지우기 공통 로직 처리 함수
+        function processDrawing(pos) {
+            if (isEraser) {
+                ctx.save();
+                ctx.strokeStyle = "#ffffff";
+                ctx.lineWidth = 35;
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+                ctx.restore();
+            } else {
+                ctx.strokeStyle = "#000000";
+                ctx.lineWidth = penWidth;
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+            }
+        }
+
+        // ── [마우스 이벤트 리스너] ──
+        canvas.addEventListener("mousedown", (e) => {
+            isDrawing = true;
+            const pos = getTouchPos(canvas, e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+        });
+
+        canvas.addEventListener("mousemove", (e) => {
+            if (!isDrawing) return;
+            const pos = getTouchPos(canvas, e);
+            processDrawing(pos);
+        });
+
+        window.addEventListener("mouseup", () => {
+            isDrawing = false;
+        });
+
+        // ── [모바일 터치 이벤트 리스터 (추가됨)] ──
+        canvas.addEventListener("touchstart", (e) => {
+            e.preventDefault(); // 손가락으로 글씨 쓸 때 화면이 위아래로 움직이는 현상 방지
+            isDrawing = true;
+            const pos = getTouchPos(canvas, e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+        }, { passive: false });
+
+        canvas.addEventListener("touchmove", (e) => {
+            e.preventDefault();
+            if (!isDrawing) return;
+            const pos = getTouchPos(canvas, e);
+            processDrawing(pos);
+        }, { passive: false });
+
+        window.addEventListener("touchend", () => {
+            isDrawing = false;
+        });
+
+        function handleCanvasAction() {
+            const current = currentStageSentences[currentIndex];
+            if (!current) return;
+            
+            if (actionBtn.innerText === "정답화면") {
+                ctx.save();
+                ctx.fillStyle = "#fa5252";
+                ctx.font = "bold 65px 'Malgun Gothic', sans-serif";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "bottom";
+                
+                ctx.fillText(current.jp, canvas.width / 2, canvas.height * 0.94);
+                ctx.restore();
+
+                actionBtn.innerText = "넘기기";
+            } else {
+                clearCanvas();
+                currentIndex++;
+                loadSentence();
+            }
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        document.addEventListener("click", function(e) {
+            if(practiceView.classList.contains("hidden")) return;
+            if(e.target.tagName !== 'CANVAS' && !e.target.classList.contains('canvas-btn')) {
+                if(userInput && !userInput.disabled) {
+                    userInput.focus();
+                }
+            }
+        });
+
+// ==========================================
+// [추가] 300문장 전용 독립 낭독 모드 로직 (HTML 내부 데이터 직접 참조)
+// ==========================================
+let external300Pool = [];
+let externalCurrentIndex = 0;
+let isExternalMode = false;
+let externalTimer = null;
+
+// 1. 버튼 클릭 시 HTML 내부의 데이터 배열을 바로 읽어서 모드 진입
+function startExternal300Mode() {
+    const btn = document.getElementById("externalPlayBtn");
+    btn.innerText = "⏳ 300문장 불러오는 중...";
+    btn.disabled = true;
+
+    external300Pool = [];
+
+    try {
+        // 파일을 불러오는 대신, HTML 내부에 선언된 변수를 직접 안전하게 가져옵니다.
+        let rawData = window.externalSentences || window.sentences || (typeof externalSentences !== 'undefined' ? externalSentences : []);
+        
+        if (Array.isArray(rawData) && rawData.length > 0) {
+            rawData.forEach(item => {
+                if (item) {
+                    external300Pool.push({
+                        jp: String(item.jp || item.japanese || "").trim(),
+                        mean: String(item.mean || item.korean || "").trim(),
+                        read: String(item.read || item.발음 || "").trim()
+                    });
+                }
+            });
+        }
+        
+        if (external300Pool.length === 0) {
+            alert("HTML 내부에 externalSentences 데이터가 정의되어 있지 않거나 비어 있습니다.");
+            btn.innerText = "📁 외부 300문장 순차 낭독 모드 시작";
+            btn.disabled = false;
+            return;
+        }
+
+        btn.innerText = `✨ 로드 완료! (총 ${external300Pool.length}문장)`;
+        
+        // 낭독 모드 활성화 및 실행
+        isExternalMode = true;
+        externalCurrentIndex = 0;
+        
+        stageView.classList.add("hidden");
+        practiceView.classList.remove("hidden");
+        canvasSectionWrapper.classList.add("hidden");
+        
+        loadExternalSentence();
+
+    } catch (error) {
+        console.error("데이터 처리 오류:", error);
+        btn.innerText = "❌ 데이터 로드 실패 (콘솔 확인)";
+        btn.disabled = false;
+    }
+}
+
+// 2. 외부 300문장 전용 문장 표시 및 일본어+한국어 음성 연속 재생 루프
+function loadExternalSentence() {
+    if (!isExternalMode) return;
+
+    if (userInput) {
+        userInput.disabled = true; // 타이핑 입력 차단
+        userInput.value = "";
+    }
+
+    if (externalCurrentIndex >= external300Pool.length) {
+        practiceView.innerHTML = `
+            <h2>🎉 300문장 낭독 완료!</h2>
+            <p style="font-size: 1.2rem; color: #4dabf7; margin-bottom: 20px;">모든 문장을 순차적으로 읽었습니다.</p>
+            <button onclick="location.reload()" style="padding: 12px 25px; font-size: 1rem; background: #ff6b6b; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">메뉴로 돌아가기</button>
+        `;
+        return;
+    }
+
+    const current = external300Pool[externalCurrentIndex];
+    
+    if (stageTitle) stageTitle.innerText = `📁 외부 300문장 순차 낭독 모드`;
+    if (progressText) progressText.innerText = `문장 ${externalCurrentIndex + 1} / ${external300Pool.length}`;
+    
+    if (slotTop) slotTop.innerHTML = `<div class="row-label">일본어 원문</div><div class="box-top-target">${current.jp}</div>`;
+    if (slotMid) slotMid.innerHTML = `<div class="row-label">한국어 해석</div><div class="box-mid">${current.mean}</div>`;
+    if (slotBottom) slotBottom.innerHTML = `<div class="row-label">발음</div><div class="box-bottom-input">${current.read}</div>`;
+
+    if (feedbackMsg) {
+        feedbackMsg.style.color = "#4dabf7";
+        feedbackMsg.innerText = "🔊 일본어 및 한국어 음성 출력 중...";
+    }
+
+    // 1단계: 일본어 음성 재생 후, 끝나면 한국어 음성 이어서 재생
+    playBilingualAudio(current.jp, current.mean, () => {
+        // 음성 재생이 모두 끝난 뒤 1.5초 대기 후 다음 문장으로 이동
+        if (externalTimer) clearTimeout(externalTimer);
+        externalTimer = setTimeout(() => {
+            if (isExternalMode) {
+                externalCurrentIndex++;
+                loadExternalSentence();
+            }
+        }, 1500);
+    });
+}
+
+// 3. 일본어와 한국어를 순서대로 읽어주는 보조 함수
+function playBilingualAudio(jpText, krText, onComplete) {
+    if (!('speechSynthesis' in window)) {
+        if (onComplete) onComplete();
+        return;
+    }
+
+    window.speechSynthesis.cancel(); // 이전 음성 취소
+
+    // 일본어 먼저 재생
+    const jpUtter = new SpeechSynthesisUtterance(jpText);
+    jpUtter.lang = 'ja-JP';
+    jpUtter.rate = 0.9;
+
+    jpUtter.onend = () => {
+        setTimeout(() => {
+            const krUtter = new SpeechSynthesisUtterance(krText);
+            krUtter.lang = 'ko-KR';
+            krUtter.rate = 1.0;
+
+            krUtter.onend = () => {
+                if (onComplete) onComplete();
+            };
+            krUtter.onerror = () => {
+                if (onComplete) onComplete();
+            };
+
+            window.speechSynthesis.speak(krUtter);
+        }, 500);
+    };
+
+    jpUtter.onerror = () => {
+        if (onComplete) onComplete();
+    };
+
+    window.speechSynthesis.speak(jpUtter);
+}
+
+
+window.externalSentencesDan = [
+  { jp: "わたし", mean: "나, 저", read: "와타시" },
+  { jp: "あなた", mean: "당신", read: "아나타" },
+  { jp: "かれ", mean: "그", read: "카레" },
+  { jp: "かのじょ", mean: "그녀", read: "카노조" },
+  { jp: "わたし たち", mean: "나 우리", read: "와타시 타치" },
+  { jp: "ひと", mean: "사람", read: "히토" },
+  { jp: "おとな", mean: "어른", read: "오토나" },
+  { jp: "こども", mean: "아이", read: "코도모" },
+  { jp: "ともだち", mean: "친구", read: "토모다치" },
+  { jp: "かぞく", mean: "가족", read: "카조쿠" },
+  { jp: "おとうさん", mean: "아버지", read: "오토상" },
+  { jp: "おかあさん", mean: "어머니", read: "오카상" },
+  { jp: "おにいさん", mean: "형, 오빠", read: "오니이상" },
+  { jp: "おねえさん", mean: "누나, 언니", read: "오네상" },
+  { jp: "おとうと", mean: "남동생", read: "오토우토" },
+  { jp: "いもうと", mean: "여동생", read: "이모우토" },
+  { jp: "せんせい", mean: "선생님", read: "센세이" },
+  { jp: "がくせい", mean: "학생", read: "가쿠세이" },
+  { jp: "かいしゃいん", mean: "회사원", read: "카이샤인" },
+  { jp: "いしゃ", mean: "의사", read: "이샤" },
+  { jp: "きょうし", mean: "교사", read: "쿄시" },
+  { jp: "けいかん", mean: "경찰관", read: "케이칸" },
+  { jp: "しごと", mean: "일, 직업", read: "시고토" },
+  { jp: "がいしゃ", mean: "회사", read: "가이샤" },
+  { jp: "じむしょ", mean: "사무실", read: "지무쇼" },
+  { jp: "こうじょう", mean: "공장", read: "코조" },
+  { jp: "みせ", mean: "가게", read: "미세" },
+  { jp: "デパト", mean: "백화점", read: "데파토" },
+  { jp: "コンビニ", mean: "편의점", read: "콘비니" },
+  { jp: "スーパー", mean: "슈퍼마켓", read: "수파" },
+  { jp: "ぎんこう", mean: "은행", read: "긴코" },
+  { jp: "ゆうびんきょく", mean: "우체국", read: "유빈쿄쿠" },
+  { jp: "びょういん", mean: "병원", read: "뵤인" },
+  { jp: "やくきょく", mean: "약국", read: "야쿠쿄쿠" },
+  { jp: "としょかん", mean: "도서관", read: "토쇼칸" },
+  { jp: "えき", mean: "역", read: "에키" },
+  { jp: "くうこう", mean: "공항", read: "쿠코" },
+  { jp: "ホテル", mean: "호텔", read: "호테루" },
+  { jp: "いえ", mean: "집", read: "이에" },
+  { jp: "へや", mean: "방", read: "헤야" },
+  { jp: "げんかん", mean: "현관", read: "겡칸" },
+  { jp: "だいどころ", mean: "부엌", read: "다이도코로" },
+  { jp: "ふろば", mean: "욕실", read: "후로바" },
+  { jp: "トイレ", mean: "화장실", read: "토이레" },
+  { jp: "にわ", mean: "정원", read: "니와" },
+  { jp: "つくえ", mean: "책상", read: "쓰쿠에" },
+  { jp: "いす", mean: "의자", read: "이스" },
+  { jp: "ベッド", mean: "침대", read: "벳도" },
+  { jp: "たな", mean: "선반", read: "타나" },
+  { jp: "はこ", mean: "상자", read: "하코" },
+  { jp: "まど", mean: "창문", read: "마도" },
+  { jp: "ドア", mean: "문", read: "도아" },
+  { jp: "カギ", mean: "열쇠", read: "카기" },
+  { jp: "かさ", mean: "우산", read: "카사" },
+  { jp: "かばん", mean: "가방", read: "카반" },
+  { jp: "さいふ", mean: "지갑", read: "사이후" },
+  { jp: "とけい", mean: "시계", read: "도케이" },
+  { jp: "めがね", mean: "안경", read: "메가네" },
+  { jp: "はさみ", mean: "가위", read: "하사미" },
+  { jp: "かみ", mean: "종이", read: "카미" },
+  { jp: "ほん", mean: "책", read: "혼" },
+  { jp: "ノト", mean: "노트", read: "노토" },
+  { jp: "えぴん", mean: "연필", read: "엔피츠" },
+  { jp: "ボルペン", "mean": "볼펜", "read": "보루펜" },
+  { jp: "じしょ", mean: "사전", read: "지쇼" },
+  { jp: "しんぶん", mean: "신문", read: "신분" },
+  { jp: "てがみ", mean: "편지", read: "테가미" },
+  { jp: "しゃしん", mean: "사진", read: "샤신" },
+  { jp: "え", mean: "그림", read: "에" },
+  { jp: "おんがく", mean: "음악", read: "온가쿠" },
+  { jp: "うた", mean: "노래", read: "우타" },
+  { jp: "テレビ", mean: "텔레비전", read: "테레비" },
+  { jp: "ラジオ", mean: "라디오", read: "라디오" },
+  { jp: "パソコン", mean: "컴퓨터", read: "파소콘" },
+  { jp: "スマホ", mean: "스마트폰", read: "스마호" },
+  { jp: "アプリ", mean: "앱", read: "아푸리" },
+  { jp: "カメラ", mean: "카메라", read: "카메라" },
+  { jp: "くるま", mean: "자동차", read: "쿠루마" },
+  { jp: "バス", mean: "버스", read: "바스" },
+  { jp: "タクシ", mean: "택시", read: "타쿠시" },
+  { jp: "じてんしゃ", mean: "자전거", read: "지텐샤" },
+  { jp: "でんしゃ", mean: "전철", read: "덴샤" },
+  { jp: "きしゃ", mean: "기차", read: "키샤" },
+  { jp: "ひこうき", mean: "비행기", read: "히코키" },
+  { jp: "ふね", mean: "배", read: "후네" },
+  { jp: "みち", mean: "길", read: "미치" },
+  { jp: "しんごう", mean: "신호등", read: "신고" },
+  { jp: "はし", mean: "다리, 젓가락", read: "하시" },
+  { jp: "まち", mean: "마을, 거리", read: "마치" },
+  { jp: "くに", mean: "나라", read: "쿠니" },
+  { jp: "せかい", mean: "세계", read: "세카이" },
+  { jp: "そら", mean: "하늘", read: "소라" },
+  { jp: "はな", mean: "꽃", read: "하나" },
+  { jp: "き", mean: "나무", read: "키" },
+  { jp: "やま", mean: "산", read: "야마" },
+  { jp: "かわ", mean: "강", read: "카와" },
+  { jp: "うみ", mean: "바다", read: "우미" },
+  { jp: "いけ", mean: "연못", read: "이케" },
+  { jp: "いぬ", mean: "개", read: "이누" },
+  { jp: "ねこ", mean: "고양이", read: "네코" },
+  { jp: "とり", mean: "새", read: "토리" },
+  { jp: "さかな", mean: "생선", read: "사카나" },
+  { jp: "むし", mean: "벌레", read: "무시" },
+  { jp: "にく", mean: "고기", read: "니쿠" },
+  { jp: "やさい", mean: "채소", read: "야사이" },
+  { jp: "くだもの", mean: "과일", read: "쿠다모노" },
+  { jp: "たまご", mean: "달걀", read: "타마고" },
+  { jp: "パン", mean: "빵", read: "판" },
+  { jp: "ごはん", mean: "밥", read: "고한" },
+  { jp: "みず", mean: "물", read: "미즈" },
+  { jp: "おゆ", mean: "더운물", read: "오유" },
+  { jp: "おちゃ", mean: "녹차", read: "오차" },
+  { jp: "コヒ", mean: "커피", read: "코히" },
+  { jp: "ぎゅうにゅう", mean: "우유", read: "규뉴" },
+  { jp: "ジュス", mean: "주스", read: "쥬스" },
+  { jp: "さけ", mean: "술, 연어", read: "사케" },
+  { jp: "しお", mean: "소금", read: "시오" },
+  { jp: "さとう", mean: "설탕", read: "사토" },
+  { jp: "しょうゆ", mean: "간장", read: "쇼유" },
+  { jp: "りんご", mean: "사과", read: "링고" },
+  { jp: "みかん", mean: "귤", read: "미칸" },
+  { jp: "バナナ", mean: "바나나", read: "바나나" },
+  { jp: "すいか", mean: "수박", read: "수이카" },
+  { jp: "きゅうり", mean: "오이", read: "큐리" },
+  { jp: "トマト", mean: "토마토", read: "토마토" },
+  { jp: "じゃがいも", mean: "감자", read: "자가이모" },
+  { jp: "たまねぎ", mean: "양파", read: "타마네기" },
+  { jp: "ふく", mean: "옷", read: "후쿠" },
+  { jp: "シャツ", mean: "셔츠", read: "샤츠" },
+  { jp: "コート", mean: "코트", read: "코토" },
+  { jp: "ズボン", mean: "바지", read: "즈본" },
+  { jp: "くつ", mean: "신발", read: "쿠츠" },
+  { jp: "くつした", mean: "양말", read: "쿠츠시타" },
+  { jp: "ぼうし", mean: "모자", read: "보시" },
+  { jp: "てぶくろ", mean: "장갑", read: "테부쿠로" },
+  { jp: "ネクタイ", mean: "넥타이", read: "네쿠타이" },
+  { jp: "ゆびわ", mean: "반지", read: "유비와" },
+  { jp: "きもの", mean: "기모노", read: "키모노" },
+  { jp: "あさ", mean: "아침", read: "아사" },
+  { jp: "ひる", mean: "점심, 낮", read: "히루" },
+  { jp: "ゆうがた", mean: "저녁때", read: "유가타" },
+  { jp: "よる", mean: "밤", read: "요루" },
+  { jp: "まよなか", mean: "한밤중", read: "마요나카" },
+  { jp: "きょう", mean: "오늘", read: "쿄" },
+  { jp: "きのう", mean: "어제", read: "키노" },
+  { jp: "あした", mean: "내일", read: "아시타" },
+  { jp: "あさって", mean: "모레", read: "아사테" },
+  { jp: "まいにち", mean: "매일", read: "마이니치" },
+  { jp: "しゅう", mean: "주", read: "슈" },
+  { jp: "げつようび", mean: "월요일", read: "게츠요비" },
+  { jp: "かようび", mean: "화요일", read: "카요비" },
+  { jp: "すいようび", mean: "수요일", read: "수요비" },
+  { jp: "もくようび", mean: "목요일", read: "모쿠요비" },
+  { jp: "きんようび", mean: "금요일", read: "킨요비" },
+  { jp: "どようび", mean: "토요일", read: "도요비" },
+  { jp: "にちようび", mean: "일요일", read: "니치요비" },
+  { jp: "ついたち", mean: "1일", read: "츠이타치" },
+  { jp: "ふつか", mean: "2일, 이틀", read: "후츠카" },
+  { jp: "みっか", mean: "3일, 사흘", read: "밋카" },
+  { jp: "はる", mean: "봄", read: "하루" },
+  { jp: "なつ", mean: "여름", read: "나츠" },
+  { jp: "あき", mean: "가을", read: "아키" },
+  { jp: "ふゆ", mean: "겨울", read: "후유" },
+  { jp: "てんき", mean: "날씨", read: "텐키" },
+  { jp: "あめ", mean: "비", read: "아메" },
+  { jp: "ゆき", mean: "눈", read: "유키" },
+  { jp: "かぜ", mean: "바람, 감기", read: "카제" },
+  { jp: "くもり", mean: "흐림", read: "쿠모리" },
+  { jp: "たいよう", mean: "태양", read: "타이요" },
+  { jp: "ほし", mean: "별", read: "호시" },
+  { jp: "つき", mean: "달", read: "츠키" },
+  { jp: "か火", mean: "불", read: "히" },
+  { jp: "いし", mean: "돌", read: "이시" },
+  { jp: "すな", mean: "모래", read: "스나" },
+  { jp: "みみ", mean: "귀", read: "미미" },
+  { jp: "め", mean: "눈", read: "메" },
+  { jp: "はな", mean: "코", read: "하나" },
+  { jp: "くち", mean: "입", read: "쿠치" },
+  { jp: "は", mean: "이, 치아", read: "하" },
+  { jp: "した", mean: "혀", read: "시타" },
+  { jp: "かお", mean: "얼굴", read: "카오" },
+  { jp: "あたま", mean: "머리", read: "아타마" },
+  { jp: "かみ", mean: "머리카락", read: "카미" },
+  { jp: "くび", mean: "목", read: "쿠비" },
+  { jp: "かた", mean: "어깨", read: "카타" },
+  { jp: "うで", mean: "팔", read: "우데" },
+  { jp: "て", mean: "손", read: "테" },
+  { jp: "ゆび", mean: "손가락", read: "유비" },
+  { jp: "むね", mean: "가슴", read: "무네" },
+  { jp: "おなか", mean: "배", read: "오나카" },
+  { jp: "せなか", mean: "등", read: "세나카" },
+  { jp: "あし", mean: "다리, 발", read: "아시" },
+  { jp: "ひざ", mean: "무릎", read: "히자" },
+  { jp: "こころ", mean: "마음", read: "코코로" },
+  { jp: "きもち", mean: "기분", read: "키모치" },
+  { jp: "あお", mean: "파랑", read: "아오" },
+  { jp: "あか", mean: "빨강", read: "아카" },
+  { jp: "しろ", mean: "하양", read: "시로" },
+  { jp: "くろ", mean: "검정", read: "쿠로" },
+  { jp: "きいろ", mean: "노랑", read: "키이로" },
+  { jp: "みどり", mean: "초록", read: "미도리" },
+  { jp: "ちゃいろ", mean: "갈색", read: "차이로" },
+  { jp: "むらさき", mean: "보라", read: "무라사키" },
+  { jp: "ピンク", mean: "분홍", read: "핑쿠" },
+  { jp: "ゴルド", mean: "금색", read: "고루도" },
+  { jp: "シルバ", mean: "은색", read: "시루바" },
+  { jp: "いろ", mean: "색", read: "이로" },
+  { jp: "かたち", mean: "모양", read: "카타치" },
+  { jp: "まる", mean: "동그라미", read: "마루" },
+  { jp: "さんかく", mean: "세모", read: "산카쿠" },
+  { jp: "しかく", mean: "네모", read: "시카쿠" },
+  { jp: "おと", mean: "소리", read: "오토" },
+  { jp: "こえ", mean: "목소리", read: "코에" },
+  { jp: "におい", mean: "냄새", read: "니오이" },
+  { jp: "あじ", mean: "맛", read: "아지" },
+  { jp: "かず", mean: "숫자, 수", read: "카주" },
+  { jp: "れい", mean: "영, 0", read: "레이" },
+  { jp: "いち", mean: "1", read: "이치" },
+  { jp: "に", mean: "2", read: "니" },
+  { jp: "さん", mean: "3", read: "산" },
+  { jp: "し", mean: "4", read: "시" },
+  { jp: "ご", mean: "5", read: "고" },
+  { jp: "ろく", mean: "6", read: "로쿠" },
+  { jp: "なな", mean: "7", read: "나나" },
+  { jp: "はち", mean: "8", read: "하치" },
+  { jp: "きゅう", mean: "9", read: "큐" },
+  { jp: "じゅう", mean: "10", read: "쥬" },
+  { jp: "たべる", mean: "먹다", read: "타베루" },
+  { jp: "のむ", mean: "마시다", read: "노무" },
+  { jp: "みる", mean: "보다", read: "미루" },
+  { jp: "きく", mean: "듣다", read: "키쿠" },
+  { jp: "はなす", mean: "말하다", read: "하나스" },
+  { jp: "かく", mean: "쓰다", read: "카쿠" },
+  { jp: "よむ", mean: "읽다", read: "요무" },
+  { jp: "かう", mean: "사다", read: "카우" },
+  { jp: "うる", mean: "팔다", read: "우루" },
+  { jp: "いく", mean: "가다", read: "이쿠" },
+  { jp: "くる", mean: "오다", read: "쿠루" },
+  { jp: "かえる", mean: "돌아가다", read: "카에루" },
+  { jp: "あるく", mean: "걷다", read: "아루쿠" },
+  { jp: "はしる", mean: "달리다", read: "하시루" },
+  { jp: "およぐ", mean: "수영하다", read: "오요구" },
+  { jp: "たつ", mean: "서다", read: "타츠" },
+  { jp: "すわる", mean: "앉다", read: "스와루" },
+  { jp: "ねる", mean: "자다", read: "네루" },
+  { jp: "おきる", mean: "일어나다", read: "오키루" },
+  { jp: "あらう", mean: "씻다", read: "아라우" },
+  { jp: "きる", mean: "입다, 자르다", read: "키루" },
+  { jp: "ぬぐ", mean: "벗다", read: "누구" },
+  { jp: "あそぶ", mean: "놀다", read: "아소부" },
+  { jp: "はたらく", mean: "일하다", read: "하타라쿠" },
+  { jp: "やすむ", mean: "쉬다", read: "야스무" },
+  { jp: "つくる", mean: "만들다", read: "츠쿠루" },
+  { jp: "なおす", mean: "고치다", read: "나오스" },
+  { jp: "こわれる", mean: "고장나다", read: "코와레루" },
+  { jp: "あける", mean: "열다", read: "아케루" },
+  { jp: "しめる", mean: "닫다", read: "시메루" },
+  { jp: "つける", mean: "켜다", read: "츠케루" },
+  { jp: "けす", mean: "끄다", read: "케스" },
+  { jp: "うる", mean: "팔다", read: "우루" },
+  { jp: "まつ", mean: "기다리다", read: "마츠" },
+  { jp: "しぬ", mean: "죽다", read: "시누" },
+  { jp: "あう", mean: "만나다", read: "아우" },
+  { jp: "のる", mean: "타다", read: "노루" },
+  { jp: "おりる", mean: "내리다", read: "오리루" },
+  { jp: "まがる", mean: "돌다", read: "마가루" },
+  { jp: "とまる", mean: "멈추다", read: "토마루" },
+  { jp: "おしえる", mean: "가르치다", read: "오시에루" },
+  { jp: "ならう", mean: "배우다", read: "나라우" },
+  { jp: "わかる", mean: "알다", read: "와카루" },
+  { jp: "しる", mean: "알다", read: "시루" },
+  { jp: "わすれる", mean: "잊다", read: "와스레루" },
+  { jp: "おぼえる", mean: "외우다", read: "오보에루" },
+  { jp: "かりる", mean: "빌리다", read: "카리루" },
+  { jp: "かす", mean: "빌려주다", read: "카스" },
+  { jp: "もらう", mean: "받다", read: "모라우" },
+  { jp: "あげる", mean: "주다", read: "아게루" },
+  { jp: "くれる", mean: "주다", read: "쿠레루" },
+  { jp: "もつ", mean: "가지다", read: "모츠" },
+  { jp: "おく", mean: "놓다", read: "오쿠" },
+  { jp: "もっていく", mean: "가져가다", read: "못테이쿠" },
+  { jp: "もってくる", mean: "가져오다", read: "못테쿠루" },
+  { jp: "さがす", mean: "찾다", read: "사가스" },
+  { jp: "みつける", mean: "찾아내다", read: "미츠케루" },
+  { jp: "ひろう", "mean": "줍다", "read": "히로우" },
+  { jp: "すてる", mean: "버리다", read: "스테루" },
+  { jp: "ひろげる", mean: "펼치다", read: "히로게루" },
+  { jp: "せつめいする", mean: "설명하다", read: "세츠메이수루" },
+  { jp: "かんがえる", mean: "생각하다", read: "칸가에루" },
+  { jp: "きめる", mean: "정하다", read: "키메루" },
+  { jp: "はじめる", mean: "시작하다", read: "하지메루" },
+  { jp: "おわる", mean: "끝나다", read: "오와루" },
+  { jp: "つづける", mean: "계속하다", read: "츠즈케루" },
+  { jp: "がんばる", mean: "힘내다", read: "간바루" },
+  { jp: "まもる", mean: "지키다", read: "마모루" },
+  { jp: "すすむ", mean: "나아가다", read: "스스무" },
+  { jp: "きずく", mean: "쌓다", read: "키즈쿠" },
+  { jp: "つながる", mean: "연결되다", read: "츠나가루" },
+  { jp: "こまる", mean: "곤란하다", read: "코마루" },
+  { jp: "なく", mean: "울다", read: "나쿠" },
+  { jp: "わらう", mean: "웃다", read: "와라우" },
+  { jp: "おこる", mean: "화내다", read: "오코루" },
+  { jp: "よろこぶ", mean: "기뻐하다", read: "요로코부" },
+  { jp: "おどろく", mean: "놀라다", read: "오도로쿠" },
+  { jp: "しんぱいする", mean: "걱정하다", read: "신파이스루" },
+  { jp: "きをつける", mean: "조심하다", read: "키오츠케루" },
+  { jp: "すき", mean: "좋아함", read: "스키" },
+  { jp: "きらい", mean: "싫어함", read: "키라이" },
+  { jp: "じょうず", "mean": "능숙함", "read": "조즈" },
+  { jp: "へた", mean: "서투름", read: "헤타" },
+  { jp: "きれい", mean: "깨끗함, 예쁨", read: "키레이" },
+  { jp: "ゆうめい", mean: "유명함", read: "유메이" },
+  { jp: "しんせつ", mean: "친절함", read: "신세츠" },
+  { jp: "げんき", mean: "건강함", read: "겡키" },
+  { jp: "ひま", mean: "한가함", read: "히마" },
+  { jp: "たいへん", "mean": "힘듦", "read": "타이헨" },
+  { jp: "べんり", mean: "편리함", read: "벤리" },
+  { jp: "ふべん", mean: "불편함", read: "후벤" },
+  { jp: "たいせつ", mean: "소중함", read: "타이세츠" },
+  { jp: "じょうぶ", mean: "튼튼함", read: "조부" },
+  { jp: "へん", mean: "이상함", read: "헨" },
+  { jp: "かんたん", mean: "간단함", read: "칸탄" },
+  { jp: "むずかしい", mean: "어렵다", read: "무즈카시이" },
+  { jp: "やさしい", mean: "쉽다, 상냥하다", read: "야사시이" },
+  { jp: "いい", mean: "좋다", read: "이이" },
+  { jp: "わるい", mean: "나쁘다", read: "와루이" },
+  { jp: "おいしい", mean: "맛있다", read: "오이시이" },
+  { jp: "まずい", mean: "맛없다", read: "마즈이" },
+  { jp: "たかい", mean: "비싸다, 높다", read: "타카이" },
+  { jp: "やすい", mean: "싸다", read: "야스이" },
+  { jp: "ひくい", mean: "낮다", read: "히쿠이" },
+  { jp: "おおきい", mean: "크다", read: "오오키이" },
+  { jp: "ちいさい", mean: "작다", read: "치이사이" },
+  { jp: "ながい", mean: "길다", read: "나가이" },
+  { jp: "みじかい", mean: "짧다", read: "미지카이" },
+  { jp: "おもい", mean: "무겁다", read: "오모이" },
+  { jp: "かるい", mean: "가볍다", read: "카루이" },
+  { jp: "はやい", mean: "빠르다, 이르다", read: "하야이" },
+  { jp: "おそい", mean: "느리다, 늦다", read: "오소이" },
+  { jp: "あつい", mean: "덥다, 뜨겁다", read: "아츠이" },
+  { jp: "さむい", mean: "춥다", read: "사무이" },
+  { jp: "つめたい", mean: "차갑다", read: "츠메타이" },
+  { jp: "あたたかい", mean: "따뜻하다", read: "아타타카이" },
+  { jp: "すずしい", mean: "시원하다", read: "스즈시이" },
+  { jp: "せまい", mean: "좁다", read: "세마이" },
+  { jp: "ひろい", mean: "넓다", read: "히로이" },
+  { jp: "とおい", mean: "멀다", read: "토오이" },
+  { jp: "ちかい", mean: "가깝다", read: "치카이" },
+  { jp: "おもしろい", mean: "재미있다", read: "오모시로이" },
+  { jp: "つまらない", mean: "재미없다", read: "츠마라나이" },
+  { jp: "たのしい", mean: "즐겁다", read: "타노시이" },
+  { jp: "うれしい", mean: "기쁘다", read: "우레시이" },
+  { jp: "かなしい", mean: "슬프다", read: "카나시이" },
+  { jp: "いたい", mean: "아프다", read: "이타이" },
+  { jp: "こわい", mean: "무섭다", read: "코와이" },
+  { jp: "きたない", mean: "더럽다", read: "키타나이" },
+  { jp: "あかるい", mean: "밝다", read: "아카루이" },
+  { jp: "くらい", mean: "어둡다", read: "쿠라이" },
+  { jp: "わかい", mean: "젊다", read: "와카이" },
+  { jp: "とし を とった", mean: "나이 를 취했다", read: "토시 오 톳타" },
+
+{ jp: "あおい", mean: "파랗다", read: "아오이" },
+{ jp: "あおくて", mean: "파랗고", read: "아오쿠테" },
+{ jp: "あおぐ", mean: "부채질하다", read: "아오구" },
+  { jp: "あおいで", mean: "부채질해서", read: "아오이데" },
+
+  { jp: "あたら しい", mean: "새로운 운", read: "아타라 시이" },
+  { jp: "ふるい", mean: "낡다, 오래되다", read: "후루이" },
+  { jp: "これ", mean: "이것", read: "코레" },
+  { jp: "それ", mean: "그것", read: "소레" },
+  { jp: "あれ", mean: "저것", read: "아레" },
+  { jp: "どれ", mean: "어것", read: "도레" },
+  { jp: "ここ", mean: "여기", read: "코코" },
+  { jp: "そこ", mean: "거기", read: "소코" },
+  { jp: "あそこ", mean: "저기", read: "아소코" },
+  { jp: "どこ", mean: "어디", read: "도코" },
+  { jp: "だれ", mean: "누구", read: "다레" },
+  { jp: "なに", mean: "무엇, 무엇", read: "나니" },
+  { jp: "いつ", mean: "언제", read: "이츠" },
+  { jp: "なぜ", mean: "왜", read: "나제" },
+  { jp: "どう", mean: "어떻게", read: "도우" },
+  { jp: "いま", mean: "지금", read: "이마" },
+  { jp: "すぐ", mean: "금방, 바로", read: "스구" },
+  { jp: "もう", mean: "벌써, 이미", read: "모우" },
+  { jp: "まだ", mean: "아직", read: "마다" },
+  { jp: "いつも", mean: "항상", read: "이츠모" },
+  { jp: "ときどき", mean: "가끔", read: "토키도키" },
+  { jp: "たくさん", mean: "많이", read: "타쿠산" },
+  { jp: "すこし", mean: "조금", read: "스코시" },
+  { jp: "ぜんぶ", mean: "전부", read: "젠부" },
+  { jp: "みんな", mean: "모두", read: "민나" }
+];
+
+window.externalSentences = [
+    { jp: "おはよう ござい ます", mean: "이르다 존재하다 ~합니다", read: "오하요우 고자이 마스" },
+    { jp: "こん にち は", mean: "지금 일 은", read: "콘 니치 와" },
+    { jp: "こん ばん は", mean: "지금 밤 은", read: "콘 방 와" },
+    { jp: "おやすみ なさい", mean: "쉬다 ~하세요", read: "오야스미 나사이" },
+    { jp: "さよう なら", mean: "그렇다면 ~라면", read: "사요우 나라" },
+    { jp: "また あい ましょう", mean: "다시 만남 ~합시다", read: "마타 아이 마쇼우" },
+    { jp: "はじめ まして", mean: "처음 ~해서", read: "하지메 마시테" },
+    { jp: "どうぞ よろしく お ねがい します", mean: "부디 잘 부탁 합니다", read: "도우조 요로시쿠 오 네가이 시마스" },
+    { jp: "わたし の なまえ は チョン·ドンホ です", mean: "저 의 이름 은 정동호 입니다", read: "와타시 노 나마에 와 쵼동호 데스" },
+    { jp: "きょう は いい てんき です ね", mean: "오늘 은 좋은 날씨 입니다 ~군요", read: "쿄우 와 이이 텐키 데스 네" },
+    { jp: "お げんき です か", mean: "건강 입니다 ~인가?", read: "오 겐키 데스 카" },
+    { jp: "はい、げんき です", mean: "네, 건강 합니다", read: "하이, 겐키 데스" },
+    { jp: "お なまえ は なん です か", mean: "이름 은 무엇 입니다 ~인가?", read: "오 나마에 와 난 데스 카" },
+    { jp: "どこ から きました か", mean: "어디 에서 왔습니다 ~인가?", read: "도코 카라 키마시타 카" },
+    { jp: "かんこく から きました", mean: "한국 에서 왔습니다", read: "칸코쿠 카라 키마시타" },
+    { jp: "しごと は なん です か", mean: "직업 은 무엇 입니다 ~인가?", read: "시고토 와 난 데스 카" },
+    { jp: "かいしゃいん です", mean: "회사원 입니다", read: "카이샤인 데스" },
+    { jp: "がくせい です", mean: "학생 입니다", read: "가쿠세이 데스" },
+    { jp: "きょう は なに を します か", mean: "오늘은 무엇 을 합니다 ~인가?", read: "쿄우 와 나니 오 시마스 카" },
+    { jp: "なに も し ません", mean: "무엇 도 하다 ~지 않습니다", read: "나니 모 시 마센" },
+    { jp: "しゅみ は なに です か", mean: "취미 는 입니다 ~인가?", read: "슈미 와 난 데스 카" },
+    { jp: "えいが を みる こと です", mean: "영화 를 보다 ~것 입니다", read: "에이가 오 미루 코토 데스" },
+    { jp: "おんがく を きく の が すき です", mean: "음악 을 듣다 ~는것 ~이 좋아함 입니다", read: "온가쿠 오 키쿠 노 가 스키 데스" },
+    { jp: "きょう は いえ で やすみ ます", mean: "오늘 은 집 에서 쉬다 입니다", read: "쿄우 와 이에 데 야스미 마스" },
+    { jp: "あした は ともだち と あい ます", mean: "내일 은 친구 와 만나다 입니다", read: "아시타 와 토모다치 토 아이 마스" },
+    { jp: "いま なんじ です か", mean: "지금 몇시 입니다 인가?", read: "이마 난지 데스 카" },
+    { jp: "いま じゅうじ です", mean: "지금 10시 입니다", read: "이마 쥬우지 데스" },
+    { jp: "きょう は なん ようび です か", mean: "오늘 은 무슨 요일 입니다 인가?", read: "쿄우 와 난 요우비 데스 카" },
+    { jp: "きょう は げつ ようび です", mean: "오늘 은 월 요일 입니다", read: "쿄우 와 게츠 요우비 데스" },
+    { jp: "きのう は なに を かい ました か", mean: "어제 는 무엇 을 사다 ~했습니다 인가?", read: "키노우 와 나니 오 카이 마시타 카" },
+
+    // 일상 및 쇼핑
+    { jp: "これ は いくら です か", mean: "이것 은 얼마 입니다 인가?", read: "코레 와 이쿠라 데스 카" },
+    { jp: "それ は せんえん です", mean: "그것 은 1000엔 입니다", read: "소레 와 센엔 데스" },
+    { jp: "あれ を ください", mean: "저것 을 주세요", read: "아레 오 쿠다사이" },
+    { jp: "お みず を お ねがい し ます", mean: "물 을 부탁 하다 입니다", read: "오 미즈 오 오 네가이 시 마스" },
+    { jp: "コヒ を いっぱい のみ ます", mean: "커피 를 한잔 마시다 입니다", read: "코히 오 잇빠이 노미 마스" },
+    { jp: "この りょうり は おいしい です", mean: "이 요리 는 맛있다 입니다", read: "코노 료우리 와 오이시이 데스" },
+    { jp: "おなか が すき ました", mean: "배 가 고프다 ~했습니다", read: "오나카 가 스키 마시타" },
+    { jp: "のど が かわき ました", mean: "목 이 마르다 ~했습니다", read: "노도 가 카와키 마시타" },
+    { jp: "カド で はらい ます", mean: "카드 로 지불하다 합니다", read: "카도 데 하라이 마스" },
+    { jp: "げんきん は つかえ ます か", mean: "현금 은 사용하다 쓰다 인가?", read: "겐킨 와 츠카에 마스 카" },
+    { jp: "えき は どこ です か", mean: "역 은 어디 입니다 인가?", read: "에키 와 도코 데스 카" },
+    { jp: "ちかく に ゆうびんきょく が あり ます", mean: "근처 에 우체국 이 있다 입니다", read: "치카쿠 니 유우빙쿄쿠 가 아리 마스" },
+    { jp: "まっすぐ いって ください", mean: "곧바로 가다 주세요", read: "맛스구 잇테쿠다사이" },
+    { jp: "みぎ に まがって ください", mean: "오른쪽 로 돌다 주세요", read: "미기 니 마갓테 쿠다사이" },
+    { jp: "ひだり に コンビニ が あり ます", mean: "왼쪽 에 편의점 이 있다 입니다", read: "히다리 니 콤비니 가 아리 마스" },
+    { jp: "でんしゃ の じかん です", mean: "전철 의 시간 입니다", read: "덴샤 노 지칸 데스" },
+    { jp: "バス に のり ます", mean: "버스 를 타다 입니다", read: "바스 니 노리 마스" },
+    { jp: "タクシ を よんで ください", mean: "택시 를 불러서 주세요", read: "타쿠시 오 욘데 쿠다사이" },
+    { jp: "くうこう は どちら です か", mean: "공항 은 어느쪽 입니다 인가?", read: "쿠우코우 와 도치라 데스 카" },
+    { jp: "にほんご の べんきょう は たのしい", mean: "일본어 의 공부 는 즐겁다", read: "니혼고 노 벤쿄우 와 타노시이" },
+    { jp: "まいにち たんご を おぼえ ます", mean: "매일 단어 를 외우다 입니다", read: "마이니치 탄고 오 오보에 마스" },
+    { jp: "しゅくだい を わすれ ました", mean: "숙제 를 잊다 ~했습니다", read: "슈쿠다이 오 와스레 마시타" },
+    { jp: "せんせい に しつもん を し ます", mean: "선생님 에게 질문 을 하다 입니다", read: "센세이 니 시츠몬 오 시 마스" },
+    { jp: "としょかん で ほん を よみ ます", mean: "도서관 에서 책 을 읽다 입니다", read: "토쇼칸 데 혼 오 요미 마스" },
+    { jp: "きょう は しごと が おおい です", mean: "오늘 은 일 이 많다 입니다", read: "쿄우 와 시고토 가 오오이 데스" },
+    { jp: "つかれ ました", mean: "피로 ~했습니다", read: "츠카레 마시타" },
+    { jp: "すこし やすみ ましょう", mean: "잠시 쉬다 ~합시다", read: "스코시 야스미 마쇼우" },
+    { jp: "あした は はれる と おもい ます", mean: "내일 은 맑을 라고 생각하다 입니다", read: "아시타 와 하레루 토 오모이 마스" },
+    { jp: "あめ が ふって い ます", mean: "비 가 내리고 있다 입니다", read: "아메 가 훗테 이 마스" },
+    { jp: "かさ を わすれない で ください", mean: "우산 을 잊지않는 해서 주세요", read: "카사 오 와스레나이 데 쿠다사이" },
+
+    // 감정 및 상태
+    { jp: "うれしい です", mean: "기쁩다 입니다", read: "우레시이 데스" },
+    { jp: "かなしい きもち です", mean: "슬픈 기분 입니다", read: "카나시이 키모치 데스" },
+    { jp: "すごく たのし った です", mean: "매우 즐겁다 웠다 입니다", read: "스고쿠 타노시 캇타 데스" },
+    { jp: "ちょっと しんぱい です", mean: "조금 걱정 입니다", read: "춋토 신파이 데스" },
+    { jp: "だいじょうぶ です か", mean: "괜찮음 입니다 인가?", read: "다이죠우부 데스 카" },
+    { jp: "まったく もんだい あり ませぬ", mean: "전혀 문제 있다 ~않습니다", read: "맛타쿠 몬다이 아리 마센" },
+    { jp: "おどろき ました", mean: "놀라다 ~했습니다", read: "오도로키 마시타" },
+    { jp: "あんしん し ました", mean: "안심 하다 ~했습니다", read: "안신 시 마시타" },
+    { jp: "きぶん が いい です", mean: "기분 이 좋다 입니다", read: "키분 가 이이 데스" },
+    { jp: "あたま が いたい です", mean: "머리 가 아프다 입니다", read: "아타마 가 이타이 데스" },
+    { jp: "びょういん に いき ます", mean: "병원 에 가다 입니다", read: "뵤우인 니 이키 마스" },
+    { jp: "くすり を のみ ます", mean: "약 을 먹다 입니다", read: "쿠스리 오 노미 마스" },
+    { jp: "はやく よくなる と いい です ね", mean: "빨리 좋아지다 면 좋다 입니다 ~네", read: "하야쿠 요쿠나루토 이이 데스 네" },
+    { jp: "けんこう が いちばん たいせつ です", mean: "건강 이 가장 소중합 입니다", read: "켄코우 가 이치반 타이세츠 데스" },
+    { jp: "やさい を たくさん たべ ます", mean: "채소 를 많이 먹다 입니다", read: "야사이 오 타쿠산 타베 마스" },
+    { jp: "まいにち うんどう を し ます", mean: "매일 운동 을 하다 입니다", read: "마이니치 운도우 오 시 마스" },
+    { jp: "よる は はやく ね ます", mean: "밤 은 일찍 자다 입니다", read: "요루 와 하야쿠 네 마스" },
+    { jp: "あさ は はやく おき ます", mean: "아침 은 일찍 일어나다 입니다", read: "아사 와 하야쿠 오키 마스" },
+    { jp: "じかん を まもり ます", mean: "시간 을 지키다 입니다", read: "지칸 오 마모리 마스" },
+    { jp: "やくそく を わすれ ませぬ", mean: "약속 을 잊다 ~않습니다", read: "야쿠소쿠 오 와스레 마센" },
+
+// [파트 A: 존재와 위치 표현 - 20문장]
+    { jp: "へや の なか に ねこ が い ます", mean: "방 의 안 에 고양이 가 있다 ~합니다", read: "헤야 노 나카 니 네코 가 이 마스" },
+    { jp: "つくえ の うえ に ほん が あり ます", mean: "책상 의 위 에 책 이 있다 ~합니다", read: "츠쿠에 노 우에 니 혼 가 아리 마스" },
+    { jp: "きょしつ に がくせい が い ません", mean: "교실 에 학생 이 있다 ~않습니다", read: "쿄우시츠 니 가쿠세이 가 이 마센" },
+    { jp: "れいぞうこ の なか に みず が あり ます", mean: "냉장고 의 안 에 물 이 있다 ~합니다", read: "레이조우코 노 나카 니 미즈 가 아리 마스" },
+    { jp: "こうえん に たくさん の ひと が い ます", mean: "공원 에 많이 의 사람 이 있다 ~합니다", read: "코우엔 니 타쿠산 노 히토 가 이 마스" },
+    { jp: "えき の まえ に おおきい びる が あり ます", mean: "역 의 앞 에 커다란 빌딩 이 있다 ~합니다", read: "에키 노 마에 니 오오키이 빌루 가 아리 마스" },
+    { jp: "かばん の なか に ぺん が あり ません", mean: "가방 의 안 에 펜 이 있다 ~않습니다", read: "카반 노 나카 니 펜 가 아리 마센" },
+    { jp: "としょかん に は たくさん の ほん が あり ます", mean: "도서관 에 는 많이 의 책 이 있다 ~합니다", read: "토쇼칸 니 와 타쿠산 노 혼 가 아리 마스" },
+    { jp: "うみ の ちかく に きれいな いえ が い ます", mean: "바다 의 근처 에 예쁜 집 이 있다 ~합니다", read: "우미 노 치카쿠 니 키레이나 이에 가 이 마스" },
+    { jp: "まいにち いえ の なか で ねこ と あそび ます", mean: "매일 집 의 안 에서 고양이 와 놀다 ~합니다", read: "마이니치 이에 노 나카 데 네코 토 아소비 마스" },
+    { jp: "つくえ の した に ちいさい ねこ が い ます", mean: "책상 의 아래 에 작은 고양이 가 있다 ~합니다", read: "츠쿠에 노 시타 니 치이사이 네코 가 이 마스" },
+    { jp: "にわ に あたらしい はな が あり ません", mean: "정원 에 새로운 꽃 이 있다 ~않습니다", read: "니와 니 아타라시이 하나 가 아리 마센" },
+    { jp: "ちかく の ぶっくかふぇ に ひと が い ます", mean: "근처 의 북카페 에 사람 이 있다 ~합니다", read: "치카쿠 노 붓쿠카후에 니 히토 가 이 마스" },
+    { jp: "はこ の なか に なにも あり ません", mean: "상자 의 안 에 아무것도 있다 ~않습니다", read: "하코 노 나카 니 나니모 아리 마센" },
+    { jp: "キッチン に おいしい りょうり が あり ます", mean: "부엌 에 맛있는 요리 가 있다 ~합니다", read: "킷친 니 오이시이 료우리 가 아리 마스" },
+    { jp: "ベッド の よこ に かばん が あり ます", mean: "침대 의 옆 에 가방 이 있다 ~합니다", read: "벳도 노 요코 니 카반 가 아리 마스" },
+    { jp: "がっこう の ちかく に びょういん が い ます", mean: "학교 의 근처 에 병원 이 있다 ~합니다", read: "갓코우 노 치카쿠 니 뵤우인 가 이 마스" },
+    { jp: "まち の なか に ひろい としょかん が あり ます", mean: "거리 의 안 에 넓은 도서관 이 있다 ~합니다", read: "마치 노 나카 니 히로이 토쇼칸 가 아리 마스" },
+    { jp: "オフィス の うけつけ に だれも い ません", mean: "오피스 의 접수처 에 아무도 있다 ~않습니다", read: "오후인스 노 우케츠케 니 다레모 이 마센" },
+    { jp: "てぶる の うえ に おちゃ が あり ます", mean: "테이블 의 위 에 녹차 가 있다 ~합니다", read: "테부루 노 우에 니 오챠 가 아리 마스" },
+
+    // [파트 B: 이유와 원인 설명 - 20문장]
+    { jp: "じかん が ない ので、いそぎます", mean: "시간 이 없다 ~때문에, 서끕니다", read: "지칸 가 나이 노데, 이소기마스" },
+    { jp: "あめ が ふる ので、いえ に います", mean: "비 가 내리다 ~때문에, 집 에 있다 ~합니다", read: "아메 가 후루 노데, 이에 니 이마스" },
+    { jp: "おなか が すいた ので、ラーメン を たべます", mean: "배 가 고프다 ~때문에, 라면 을 먹습니다", read: "오나카 가 스이타 노데, 라멘 오 타베마스" },
+    { jp: "つかれた から、きょう は やすみ ます", mean: "피곤하다 ~하니까, 오늘 은 쉽니다 ~합니다", read: "츠카레타 카라, 쿄우 와 야스미 마스" },
+    { jp: "ねむい から、はやく ねます", mean: "졸리다 ~하니까, 일찍 잡니다", read: "누무이 카라, 하야쿠 네마스" },
+    { jp: "くるま が おおい から、ちかてつ を つかいます", mean: "차 가 많다 ~하니까, 지하철 을 사용합니다", read: "쿠루마 가 오오이 카라, 치카테츠 오 츠카이마스" },
+    { jp: "ねだん が たかい ので、かいません", mean: "가격 이 비싸다 ~때문에, 사지않습니다", read: "네단 가 타카이 노데, 카이마센" },
+    { jp: "てんき が いい から、さんぽ を します", mean: "날씨 가 좋다 ~하니까, 산책 을 합니다", read: "텐키 가 이이 카라, 산포 오 시마스" },
+    { jp: "しごと が おわった ので、かえります", mean: "일 이 끝나다 ~때문에, 돌아갑니다", read: "시고토 노 오왓타 노데, 카에리마스" },
+    { jp: "みず が ない ので、かいます", mean: "물 이 없다 ~때문에, 삽니다", read: "미즈 가 나이 노데, 카이마스" },
+    { jp: "おそく なった ので、タクシー に のります", mean: "늦어지다 ~때문에, 택시 에 탑니다", read: "오소쿠 낫타 노데, 타쿠시이 니 노리마스" },
+    { jp: "こえ が ちいさい から、きこえません", mean: "목소리 가 작다 ~하니까, 들리지않습니다", read: "코에 가 치이사이 카라, 키코에마센" },
+    { jp: "たいせつな よやく だから、わすれません", mean: "소중한 예약 이다 ~하니까, 잊지않습니다", read: "타이세츠나 요야쿠 다카라, 와스레마센" },
+    { jp: "むずかしい から、せんせい に ききます", mean: "어렵다 ~하니까, 선생님 에게 묻습니다", read: "무즈카시이 카라, 센세이 니 키키마스" },
+    { jp: "こんぶいゅーたー が こわれ た ので、なおします", mean: "컴퓨터 가 고장나다 ~때문에, 고칩니다", read: "콘퓨타가 코와레타 노데, 나오시마스" },
+    { jp: "くるしい から、すこし やすみます", mean: "괴롭다 ~하니까, 조금 쉽니다", read: "쿠루시이 카라, 스코시 야스미마스" },
+    { jp: "おちゃ が すき だから、まいにち のみます", mean: "녹차 가 좋다 ~하니까, 매일 마십니다", read: "오챠 가 스키 다카라, 마이니치 노미마스" },
+    { jp: "やすみ の ひ だから、おそく おきます", mean: "휴일 의 날 이다 ~하니까, 늦게 일어납니다", read: "야스미 노 히 다카라, 오소쿠 오키마스" },
+    { jp: "べんり だから、この アプリ を つかいます", mean: "편리하다 ~하니까, 이 앱 을 사용합니다", read: "벤리 다카라, 코노 아푸리 오 츠카이마스" },
+    { jp: "げんき が ほしい から、やさい を たべます", mean: "건강 이 원하다 ~하니까, 채소 를 먹습니다", read: "겐키 가 호시이 카라, 야사이 오 타베마스" },
+
+    // [파트 C: 소망 표현 - 20문장]
+    { jp: "もっと にほんご を はなし たい です", mean: "더욱 일본어 를 말하다 하고싶다 입니다", read: "못토 니혼고 오 하나시 타이 데스" },
+    { jp: "おいしい ラーメン を たべ たい です", mean: "맛있는 라면 을 먹다 하고싶다 입니다", read: "오이시이 라멘 오 타베 타이 데스" },
+    { jp: "らいしゅう ときょ へ いきたい です", mean: "다음주 도쿄 에 가고싶다 입니다", read: "라이슈우 도쿄우 에 이키타이 데스" },
+    { jp: "じぶん の じかん を もちたい です", mean: "자신 의 시간 을 가지고싶다 입니다", read: "지분 노 지칸 오 모치타이 데스" },
+    { jp: "あたらしい ぱそこん を かい たい です", mean: "새로운 컴퓨터 를 사다 하고싶다 입니다", read: "아타라시이 파소콘 오 카이 타이 데스" },
+    { jp: "きょう は はやく いえ に かえりたい です", mean: "오늘 은 일찍 집 에 돌아가고싶다 입니다", read: "쿄우 와 하야쿠 이에 니 카에리타이 데스" },
+    { jp: "もっと えいご を べんきょうしたい です", mean: "더욱 영어 를 공부하고싶다 입니다", read: "못토 에이고 오 벤쿄우시타이 데스" },
+    { jp: "すずしい ところ で やすみ たい です", mean: "시원한 곳 에서 쉬다 하고싶다 입니다", read: "스즈시이 토코로 데 야스미 타이 데스" },
+    { jp: "ゆうめいな えいが を み たい です", mean: "유명한 영화 를 보다 하고싶다 입니다", read: "유우메이나 에이가 오 미 타이 데스" },
+    { jp: "すこし たかい ぷれぜんと を もらい たい です", mean: "조금 비싼 선물 을 받다 하고싶다 입니다", read: "스코시 타카이 프레젠토 오 모라이 타이 데스" },
+    { jp: "きょう は しごと を はやく おわらせたい です", mean: "오늘 은 일 을 일찍 끝내고싶다 입니다", read: "쿄우 와 시고토 오 하야쿠 오와라세타이 데스" },
+    { jp: "ゆうぐれ の そら を みあげたい です", mean: "해질녘 의 하늘 을 올려다보고싶다 입니다", read: "유우구레 노 소라 오 미아게타이 데스" },
+    { jp: "いっしょに まいにち さんぽ を し たい です", mean: "함께 매일 산포 를 하다 하고싶다 입니다", read: "잇쇼니 마이니치 산포 오 시 타이 데스" },
+    { jp: "じぶん の でざいん で アプリ を つくりたい です", mean: "자신 의 디자인 으로 앱 을 만들고싶다 입니다", read: "지분 노 데자인 데 아푸리 오 츠쿠리타이 데스" },
+    { jp: "ともだち と たのしく おしゃべり たい です", mean: "친구 와 즐겁게 수다떨고싶다 입니다", read: "토모다치 토 타노시쿠 오샤베리 타이 데스" },
+    { jp: "まいにち げんき に あいさつ を し たい です", mean: "매일 건강하게 인사 를 하다 하고싶다 입니다", read: "마이니치 겐키 니 아이사츠 오 시 타이 데스" },
+    { jp: "きょう の きろく を しっかり のこし たい です", mean: "오늘 의 기록 을 단단히 남기고싶다 입니다", read: "쿄우 노 키로쿠 오 싯카리 노코시 타이 데스" },
+    { jp: "すこしずつ まえ に すすみ たい です", mean: "조금씩 앞으로 나아가다 하고싶다 입니다", read: "스코시즈츠 마에 니 스스미 타이 데스" },
+    { jp: "おいしい おちゃ を いっぱい のみたい です", mean: "맛있는 녹차 를 한잔 마시고싶다 입니다", read: "오이시이 오챠 오 잇빠이 노미타이 데스" },
+    { jp: "たいせつな やくそく を ぜったいに まもりたい です", mean: "소중한 약속 을 절대로 지키고싶다 입니다", read: "타이세츠나 야쿠소쿠 오 젯타이 니 마모리타이 데스" },
+
+    // [파트 D: 부정 표현 - 20문장]
+    { jp: "きょう は コーヒー を のみません", mean: "오늘 은 커피 를 마시지않습니다", read: "쿄우 와 코히 오 노미마센" },
+    { jp: "あした は ひと が おおく ない です", mean: "내일 은 사람 이 많지않습니다", read: "아시타 와 히토 가 오오쿠 나이 데스" },
+    { jp: "この りょうり は からく ない です", mean: "이 요리 는 맵지않습니다", read: "코노 료우리 와 카라쿠 나이 데스" },
+    { jp: "しごと が おわらない から かえりません", mean: "일 이 끝나지않다 ~하니까 돌아가지않습니다", read: "시고토 가 오와라나이 카라 카에리마센" },
+    { jp: "じかん が ない から えいが を みません", mean: "시간 이 없다 ~하니까 영화 를 보지않습니다", read: "지칸 가 나이 카라 에이가 오 미마센" },
+    { jp: "あめ が ふる から そと に いきません", mean: "비 가 내리다 ~하니까 밖 에 가지않습니다", read: "아메 가 후루 카라 소토 니 이키마센" },
+    { jp: "むずかしい もんだい だから わかりません", mean: "어려운 문제 이다 ~하니까 알지못합니다", read: "무즈카시이 몬다이 다카라 와카리마센" },
+    { jp: "あした は ざんぎょう を しません", mean: "내일 은 야근 을 하지않습니다", read: "아시타 와 잔교우 오 시마센" },
+    { jp: "たいせつな るーる を わすれませぬ", mean: "소중한 룰 을 잊지않습니다", read: "타이세츠나 루루 오 와스레마센" },
+    { jp: "そんなに たかく ない です", mean: "그렇게 비싸지않습니다", read: "손나니 타카쿠 나이 데스" },
+    { jp: "きょう は ひと が おおく ありません", mean: "오늘 은 사람 이 많지않습니다", read: "쿄우 와 히토 가 오오쿠 아리마센" },
+    { jp: "あまい おかし は すき でありません", mean: "단 과자 는 좋아하지않습니다", read: "아마이 오카시 와 스키 데아리마센" },
+    { jp: "この アプリ は むずかしき ない です", mean: "이 앱 은 어렵지않습니다", read: "코노 아푸리 와 무즈카시쿠 나이 데스" },
+    { jp: "いま は しごと を し て いません", mean: "지금 은 일 을 하고있지않습니다", read: "이마 와 시고토 오 시테 이마센" },
+    { jp: "ゆうがた は あめ が ふりません", mean: "저녁 은 비 가 내리지않습니다", read: "유우가타 와 아메 가 후리마센" },
+    { jp: "たいせつな こと を みのがしませぬ", mean: "소중한 것 을 놓치지않습니다", read: "타이세츠나 코토 오 미노가시마센" },
+    { jp: "よる おそく に たべもの を たべません", mean: "밤 늦게 에 음식 을 먹지않습니다", read: "요루 오소쿠 니 타베모노 오 타베마센" },
+    { jp: "べんり でない でざいん は つかいません", mean: "편리하지않은 디자인 은 사용하지않습니다", read: "벤리 데나이 데자인 와 츠카이마센" },
+    { jp: "わるい 習慣 は つづけませぬ", mean: "나쁜 습관 은 계속하지않습니다", read: "와루이 슈우칸 와 츠즈케마센" },
+    { jp: "こころ が ない ことば は つかいません", mean: "마음 이 없는 말 은 사용하지않습니다", read: "코코로 가 나이 코토바 와 츠카이마센" },
+
+    // [파트 E: 과거 경험 표현 - 20문장]
+    { jp: "きのう、びょういん に いきました", mean: "어제, 병원 에 가다 ~했습니다", read: "키노우, 뵤우인 니 이키마시타" },
+    { jp: "おいしい ラーメン を たべました", mean: "맛있는 라면 을 먹다 ~했습니다", read: "오이시이 라멘 오 타베마시타" },
+    { jp: "せんしゅう の どようび に えいが を みました", mean: "지난주 의 토요일 에 영화 를 보다 ~했습니다", read: "센슈우 노 도요우비 니 에이가 오 미마시타" },
+    { jp: "きのう の よる は はやく ねました", mean: "어젯 의 밤 은 일찍 자다 ~했습니다", read: "키노우 노 요루 와 하야쿠 네마시타" },
+    { jp: "あさ は はやく おきました", mean: "아침 은 일찍 일어나다 ~했습니다", read: "아사 와 하야쿠 오키마시타" },
+    { jp: "じぶん で あたらしい アプリ を つくりました", mean: "자신 으로 새로운 앱 을 만들다 ~했습니다", read: "지분 데 아타라시이 아푸리 오 츠쿠리마시타" },
+    { jp: "ゆうがた に ともだち と あいました", mean: "저녁 에 친구 와 만나다 ~했습니다", read: "유우가타 니 토모다치 토 아이마시타" },
+    { jp: "としょかん で たくさん の ほん を よみました", mean: "도서관 에서 많이 의 책 을 읽다 ~했습니다", read: "토쇼칸 데 타수칸 노 혼 오 요미마시타" },
+    { jp: "きのう は てんき が よかったです", mean: "어제 은 날씨 가 좋았습니다", read: "쿄우 와 텐키 가 요캇타 데스" },
+    { jp: "しごと の けいかく を しっかり たてました", mean: "일 의 계획 을 단단히 세우다 ~했습니다", read: "시고토 노 케이카쿠 오 싯카리 타테마시타" },
+    { jp: "まいにち の じかん を まもりました", mean: "매일 의 시간 을 지키다 ~했습니다", read: "마이니치 노 지칸 오 마모리마시타" },
+    { jp: "たいせつな やくそく を わすれませでした", mean: "소중한 약속 을 잊지않았습니다", read: "타이세츠나 야쿠소쿠 오 와스레마세데시타" },
+    { jp: "すこし つかれ た から おやすみ を しました", mean: "조금 지치다 ~하니까 휴식 을 하다 ~했습니다", read: "스코시 츠카레타 카라 오야스미 오 시마시타" },
+    { jp: "おちゃ を 잇빠이 노みました", mean: "녹차 를 한잔 마시다 ~했습니다", read: "오챠 오 잇빠이 노미마시타" },
+    { jp: "あたらしい ふく を かい に いきました", mean: "새로운 옷 을 사러 가다 ~했습니다", read: "아타라시이 후쿠 오 카이 니 이키마시타" },
+    { jp: "こうえん で にじゅうぷん さんぽ を しました", mean: "공원 에서 20분 산책 을 하다 ~했습니다", read: "코우엔 데 니쥬우분 산포 오 시마시타" },
+    { jp: "むずかしい もんだい を かいけつ しました", mean: "어려운 문제 를 해결 하다 ~했습니다", read: "무즈카시이 몬다이 오 카이케츠 시마시타" },
+    { jp: "べんり な きかい を かいました", mean: "편리한 기계 를 사다 ~했습니다", read: "벤리 나 키카이 오 카이마시타" },
+    { jp: "こころ を こめて もじ を かきました", mean: "마음 을 담아 글자 를 쓰다 ~했습니다", read: "코코로 오 코메테 모지 오 카키마시타" },
+    { jp: "げんき に あいさつ を しました", mean: "건강하게 인사 를 하다 ~했습니다", read: "겐키 니 아이사츠 오 시마시타" }
+];
+
+window.SaveWord = [
+{ jp: "げんき に あいさつ を しました", mean: "건강하게 인사 를 하다 ~했습니다", read: "겐키 니 아이사츠 오 시마시타" }
+
+];
+
+    </script>
+
+</body>
+</html>
