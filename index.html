@@ -327,11 +327,11 @@
 		<!-- 👇 추가된 단어 연습 버튼 -->
 		<button class="stage-btn" onclick="MakeAnihogo()">기록하는 일본어 <span id="MakeWord"> 수첩</span></button>
 	    <button class="stage-btn" onclick="startWordPractice()">단어 연습 (DAN.JS 풀) <span id="countWord"> 180 문장</span></button>
-                <button class="stage-btn" onclick="startStage(1)">1단계 (기초 필수 100문장) <span id="count1">100 문장</span></button>
-                <button class="stage-btn" onclick="startStage(2)">2단계 (1단계 + 확장 일상) <span id="count2">150 문장</span></button>
-                <button class="stage-btn" onclick="startStage(3)">3단계 (1~2단계 + 심화 응용) <span id="count3">200 문장</span></button>
-                <button class="stage-btn" onclick="startStage(4)">4단계 (1~3단계 + 유창성 도전) <span id="count4">250 문장</span></button>
-                <button class="stage-btn" onclick="startStage(5)">5단계 (1~4단계 + 마스터 랠리) <span id="count5">750 문장</span></button>
+                <button class="stage-btn" onclick="startStage(1)">1단계 (기초 필수 100문장) <span id="count1">40문장</span></button>
+                <button class="stage-btn" onclick="startStage(2)">2단계 (1단계 + 확장 일상) <span id="count2">60문장</span></button>
+                <button class="stage-btn" onclick="startStage(3)">3단계 (1~2단계 + 심화 응오후 1:32 2026-10-01용) <span id="count3">70문장</span></button>
+                <button class="stage-btn" onclick="startStage(4)">4단계 (1~3단계 + 유창성 도전) <span id="count4">76문장</span></button>
+                <button class="stage-btn" onclick="startStage(5)">5단계 (1~4단계 + 마스터 랠리) <span id="count5">40문장</span></button>
             </div>
         </div>
 
@@ -393,6 +393,7 @@
         <button class="control-btn" onclick="startChatInput()">문자</button>
         <button class="control-btn" onclick="clearMemoDisplay()">삭제</button>
         <button class="control-btn save-btn" onclick="saveCurrentMemo()">오답</button>
+	<button class="control-btn save-btn" onclick="saveNewMemo()">신규</button>
     </div>
 </div>
 
@@ -538,204 +539,396 @@ if (memoDisplayArea) {
 // 문자 디스플레이 마지막 ===============================================================
 
 // 추가되는 라인===============================================================
-
 // 페이지가 로드될 때 localStorage에 저장된 데이터가 있으면 불러오기
+
 if (!window.SaveWord) {
+
     const localData = localStorage.getItem('SaveWord');
+
     window.SaveWord = localData ? JSON.parse(localData) : [];
+
 }
+
+
 
 // 1. 수첩 화면 열기 (MakeWord 버튼과 연결)
+
 function MakeAnihogo() {
+
     const stageView = document.getElementById("stageView");
+
     if (stageView) stageView.classList.add("hidden");
 
+
+
     const memoPageView = document.getElementById("memoPageView");
+
     if (memoPageView) memoPageView.classList.remove("hidden");
+
 }
+
+
 
 // 2. 수첩 화면 닫기 (← 버튼과 연결)
+
 function closeMemoPage() {
+
     const memoPageView = document.getElementById("memoPageView");
+
     if (memoPageView) memoPageView.classList.add("hidden");
 
+
+
     const stageView = document.getElementById("stageView");
+
     if (stageView) stageView.classList.remove("hidden");
+
 }
+
+
 
 // 아직 정리못함
+
 // 3. [음성] 버튼: Web Speech API로 말하는 한국어 인식해서 화면에 추가하기
+
 function startVoiceInput() {
+
   alert("현재 사용 불가");
+
 }
 
 
+
+
+
 // 여기서부터 문자 관력 입력 조회 저장
+
 // 여기서부터 문자 관력 입력 조회 저장
+
 function addMemoItemToDisplay(data) {
+
     const displayArea = document.getElementById("memoDisplayArea");
+
     if (!displayArea) {
+
         console.error("memoDisplayArea 요소를 찾을 수 없습니다.");
+
         return;
+
     }
+
+
 
     const itemDiv = document.createElement("div");
+
     itemDiv.className = "memo-item";
+
     itemDiv.style.margin = "0 0 10px 0";
+
     itemDiv.style.padding = "10px";
+
     itemDiv.style.backgroundColor = "#f9f9f9";
+
     itemDiv.style.borderRadius = "6px";
+
     itemDiv.style.borderBottom = "1px solid #e0e0e0";
+
     itemDiv.style.color = "#333";
 
+
+
     // 전체 데이터베이스 통합 (검색용)
+
     let fullWordDatabase = [];
+
     if (typeof window.externalSentencesDan !== 'undefined' && Array.isArray(window.externalSentencesDan)) {
+
         fullWordDatabase = fullWordDatabase.concat(window.externalSentencesDan);
+
     }
+
     if (typeof window.SaveWord !== 'undefined' && Array.isArray(window.SaveWord)) {
+
         fullWordDatabase = fullWordDatabase.concat(window.SaveWord);
+
     }
+
+
 
     const meanParts = (data.mean || "").split(/\s+/);
 
+
+
     const jpElement = document.createElement("div");
+
     jpElement.className = "memo-jp";
+
     jpElement.style.fontSize = "1.1rem";
+
     jpElement.style.fontWeight = "bold";
+
     jpElement.style.color = "#222";
 
+
+
     const meanElement = document.createElement("div");
+
     meanElement.className = "memo-mean";
+
     meanElement.style.fontSize = "0.95rem";
+
     meanElement.style.color = "#0066cc";
+
     meanElement.style.marginTop = "4px";
 
+
+
     const readElement = document.createElement("div");
+
     readElement.className = "memo-read";
+
     readElement.style.fontSize = "0.85rem";
+
     readElement.style.color = "#666";
+
     readElement.style.marginTop = "2px";
+
     readElement.textContent = "음: ";
 
+
+
     // 각 띄어쓰기 조각별로 개별 검색 수행
+
     meanParts.forEach((meanToken) => {
+
         const cleanToken = meanToken.toLowerCase();
 
+
+
         // 데이터베이스에서 해당 의미(mean)와 일치하는 단어 찾기
+
         const foundWord = fullWordDatabase.find(item => {
+
             const itemMean = item.mean ? String(item.mean).toLowerCase() : "";
+
             return itemMean === cleanToken;
+
         });
 
+
+
         let jpToken = "?";
+
         let readToken = "?";
 
+
+
         if (foundWord) {
+
             jpToken = foundWord.jp || "?";
+
             readToken = foundWord.read || "?";
+
         }
+
+
 
         // 일본어 span 생성
+
         const jpSpan = document.createElement("span");
+
         jpSpan.textContent = jpToken + " ";
 
+
+
         // 음 span 생성
+
         const readSpan = document.createElement("span");
+
         readSpan.textContent = readToken + " ";
 
+
+
         // '?'인 경우에만 클릭 이벤트 부여
+
         if (jpToken === "?" || jpToken.includes("?") || readToken === "?" || readToken.includes("?")) {
+
             jpSpan.style.color = "#ff4444";
+
             jpSpan.style.cursor = "pointer";
+
             jpSpan.title = "클릭하여 단어 등록";
 
+
+
             readSpan.style.color = "#ff4444";
+
             readSpan.style.cursor = "pointer";
+
             readSpan.title = "클릭하여 단어 등록";
 
+
+
             const clickAction = function() {
+
                 handleQuestionClick(meanToken, jpSpan, readSpan);
+
             };
 
+
+
             jpSpan.onclick = clickAction;
+
             readSpan.onclick = clickAction;
+
         }
+
+
 
         jpElement.appendChild(jpSpan);
 
+
+
         const meanSpan = document.createElement("span");
+
         meanSpan.textContent = meanToken + " ";
+
         meanElement.appendChild(meanSpan);
 
+
+
         readElement.appendChild(readSpan);
+
     });
 
+
+
     itemDiv.appendChild(jpElement);
+
     itemDiv.appendChild(meanElement);
+
     itemDiv.appendChild(readElement);
 
+
+
     displayArea.appendChild(itemDiv);
+
     displayArea.scrollTop = displayArea.scrollHeight;
+
 }
+
+
+
 
 
 // 4. [문자] 버튼: 띄어쓰기 단위 매칭 및 모르는 단어는 위/아래 모두 '?' 처리하는 함수
+
 function startChatInput() {
+
     const userInput = prompt("추가할 문장 또는 해석을 입력하세요:");
+
     if (!userInput || userInput.trim() === "") return;
 
+
+
     // 띄어쓰기(스페이스) 단위로 어절 쪼개기
+
     const queryTokens = userInput.trim().split(/\s+/);
 
+
+
     // 전체 데이터베이스 결합
+
     let fullWordDatabase = [];
+
     if (typeof window.externalSentencesDan !== 'undefined' && Array.isArray(window.externalSentencesDan)) {
+
         fullWordDatabase = fullWordDatabase.concat(window.externalSentencesDan);
+
     }
+
     if (typeof window.SaveWord !== 'undefined' && Array.isArray(window.SaveWord)) {
+
         fullWordDatabase = fullWordDatabase.concat(window.SaveWord);
+
     }
+
+
 
     let translatedJpParts = [];
+
     let translatedReadParts = [];
 
+
+
     // 각 띄어쓰기 조각별로 단어장(mean)과 매칭 시도
+
     queryTokens.forEach(token => {
+
         const cleanToken = token.toLowerCase();
+
         
+
         const foundWord = fullWordDatabase.find(item => {
+
             const mean = item.mean ? String(item.mean).toLowerCase() : "";
+
             return mean === cleanToken || mean.includes(cleanToken);
+
         });
 
+
+
         if (foundWord) {
+
             // [매칭 성공] 단어장에 있는 경우 -> 일본어와 음 가져오기
+
             translatedJpParts.push(foundWord.jp || token);
+
             translatedReadParts.push(foundWord.read || "");
+
         } else {
+
             // [매칭 실패 / 모르는 단어] -> 위쪽과 아래쪽(음) 모두 "?" 로 표기
+
             translatedJpParts.push("?");
+
             translatedReadParts.push("?");
+
         }
+
     });
 
+
+
     // 최종 3단 구조 데이터 조합
+
     const memoData = {
+
         jp: translatedJpParts.join(" "),       // 맨 위: 매칭된 일본어 및 모르는 부분은 "?"
+
         mean: userInput,                        // 중간: 내가 입력한 원본 한글 문장
+
         read: translatedReadParts.join(" ")     // 젤 밑: 매칭된 음 및 모르는 부분은 "?"
+
     };
 
+
+
     // 3단 구조로 화면에 출력
+
     addMemoItemToDisplay(memoData);
+
 }
+
+
+
 
 
 function handleQuestionClick(targetMean, jpSpanTarget, readSpanTarget) {
     // 1. 팝업으로 일본어 원문 입력 받기
     const inputJp = prompt(`[단어 등록] '${targetMean}'의 일본어 원문을 입력하세요:`, "");
-    if (!inputJp || inputJp.trim() === "") return;
+    if (!inputJp || !inputJp.trim()) return;
 
     // 2. 팝업으로 음(발음) 입력 받기
     const inputRead = prompt(`[단어 등록] '${targetMean}'의 음(발음)을 입력하세요:`, "");
@@ -745,7 +938,9 @@ function handleQuestionClick(targetMean, jpSpanTarget, readSpanTarget) {
     const cleanMean = targetMean.trim();
     const cleanRead = inputRead.trim() !== "" ? inputRead.trim() : cleanJp;
 
-    // 3. 기존 데이터 불러오기 (localStorage 또는 메모리에서)
+    // ----------------------------------------------------
+    // [1] 기존 SaveWord 저장 로직 (평소대로 무조건 정상 저장)
+    // ----------------------------------------------------
     let savedWords = [];
     try {
         const localData = localStorage.getItem('SaveWord');
@@ -758,18 +953,53 @@ function handleQuestionClick(targetMean, jpSpanTarget, readSpanTarget) {
         savedWords = [];
     }
 
-    // 4. 새 데이터 추가
     savedWords.push({
         jp: cleanJp,
         mean: cleanMean,
         read: cleanRead
     });
 
-    // 5. 브라우저 localStorage에 즉시 영구 저장 (파일 다운로드 없음!)
     localStorage.setItem('SaveWord', JSON.stringify(savedWords));
-    window.SaveWord = savedWords; // 메모리 변수도 동기화
+    window.SaveWord = savedWords;
 
-    // 6. 화면의 '?' 요소들을 입력한 값으로 즉시 교체
+    // ----------------------------------------------------
+    // [2] AddWord 저장소 전용: 일본어/뜻 조회 후 "둘 다 없을 때만" 저장!
+    // ----------------------------------------------------
+    let addWords = [];
+    try {
+        const localAddData = localStorage.getItem('AddWord');
+        if (localAddData) {
+            addWords = JSON.parse(localAddData);
+        } else if (window.AddWord && Array.isArray(window.AddWord)) {
+            addWords = window.AddWord;
+        }
+    } catch (e) {
+        addWords = [];
+    }
+
+    // 각각 따로 조회
+    const hasJpInAdd = addWords.some(item => item.jp && item.jp.trim() === cleanJp);
+    const hasMeanInAdd = addWords.some(item => item.mean && item.mean.trim() === cleanMean);
+
+    let isAddWordSaved = false;
+
+    // 룰 적용: 일본어 있거나, 뜻 있거나, 둘 다 있으면 패스! 오직 "둘 다 없을 때만" 저장
+    if (!hasJpInAdd && !hasMeanInAdd) {
+        addWords.push({
+            jp: cleanJp,
+            mean: cleanMean,
+            read: cleanRead
+        });
+
+        localStorage.setItem('AddWord', JSON.stringify(addWords));
+        window.AddWord = addWords;
+        isAddWordSaved = true;
+        console.log("일본어와 뜻 둘 다 없으므로 AddWord에 신규 저장됨:", cleanJp, cleanMean);
+    } else {
+        console.log("일본어 또는 뜻이 이미 존재하므로 AddWord 저장을 패스합니다.");
+    }
+
+    // 5. 화면의 '?' 요소들을 입력한 값으로 즉시 교체
     if (jpSpanTarget) {
         jpSpanTarget.textContent = cleanJp + " ";
         jpSpanTarget.style.color = "#222";
@@ -784,8 +1014,14 @@ function handleQuestionClick(targetMean, jpSpanTarget, readSpanTarget) {
         readSpanTarget.onclick = null;
     }
 
-    // 7. 바로 확인해볼 수 있도록 현재까지 저장된 전체 목록을 팝업창으로 띄워주기
-    let listText = `--- ['${cleanMean}' 등록 완료 & 전체 저장 목록] ---\n\n`;
+    // 6. 확인용 알림
+    let listText = `--- ['${cleanMean}' 등록 완료] ---\n`;
+    if (isAddWordSaved) {
+        listText += `✨ [AddWord 추가] 일본어와 뜻이 둘 다 애드단에 없어 신규로 저장되었습니다!\n\n`;
+    } else {
+        listText += `🛡 [AddWord 패스] 일본어 또는 뜻 중 하나(또는 둘 다)가 이미 존재하여 애드단 저장은 패스되었습니다.\n\n`;
+    }
+    
     savedWords.forEach((item, index) => {
         listText += `${index + 1}. [원문] ${item.jp} | [뜻] ${item.mean} | [발음] ${item.read}\n`;
     });
@@ -793,80 +1029,31 @@ function handleQuestionClick(targetMean, jpSpanTarget, readSpanTarget) {
     alert(listText);
 }
 
+
+
 // 5. [지우개] 버튼: 디스플레이창 비우기 (확실하게 작동하도록 수정)
+
 function clearMemoDisplay() {
+
     const displayArea = document.getElementById("memoDisplayArea");
+
     if (displayArea) {
+
         displayArea.innerHTML = ""; // 내용 초기화
+
     } else {
+
         alert("디스플레이 영역('memoDisplayArea')을 찾지 못했습니다. HTML 태그의 ID를 확인해주세요.");
+
     }
+
 }
 
-// 6. 오답 기록 전체를 출력하고 addPlusDAN.JS 파일로 다운로드한 뒤 기존 저장소 비우기
+
+
+// 6. localStorage에 저장된 SaveWord 데이터를 파일로 안전하게 다운로드하고 저장소 비우기
 function saveCurrentMemo() {
-    const displayArea = document.getElementById("memoDisplayArea");
-    if (!displayArea) {
-        console.error("memoDisplayArea 요소를 찾을 수 없습니다.");
-        alert("디스플레이 영역을 찾을 수 없습니다.");
-        return;
-    }
-
-    const items = displayArea.querySelectorAll(".memo-item");
-    if (items.length === 0) {
-        alert("저장할 내용이 없습니다.");
-        return;
-    }
-
-    if (!window.SaveWord) {
-        window.SaveWord = [];
-    }
-
-    let itemsToSave = [];
-
-    items.forEach((item, index) => {
-        const jpElement = item.querySelector(".memo-jp");
-        const meanElement = item.querySelector(".memo-mean");
-        const readElement = item.querySelector(".memo-read");
-
-        if (!jpElement || !meanElement) return;
-
-        // 1. 각 칸의 텍스트를 깔끔하게 가져옴 (사용자가 직접 수정한 내용 포함)
-        const jpText = jpElement.textContent.trim();
-        const meanText = meanElement.textContent.trim();
-        
-        let readText = "";
-        if (readElement) {
-            let rawRead = readElement.textContent.trim();
-            // "음:" 글자가 앞에 붙어있다면 깔끔하게 제거하고 순수 발음만 추출
-            if (rawRead.startsWith("음:")) {
-                rawRead = rawRead.replace("음:", "").trim();
-            }
-            readText = rawRead;
-        }
-
-        console.log(`[항목 ${index + 1}] 파싱된 데이터 -> 일본어: "${jpText}", 해석: "${meanText}", 음: "${readText}"`);
-
-        // 2. 빈 칸이 아니라면 무조건 저장 대상으로 수집
-        if (jpText !== "" && meanText !== "") {
-            itemsToSave.push({
-                jp: jpText,
-                mean: meanText,
-                read: readText !== "" ? readText : "?" // 음이 비어있으면 기본으로 ? 처리
-            });
-        }
-    });
-
-    if (itemsToSave.length === 0) {
-        alert("저장할 유효한 단어 데이터가 없습니다.");
-        return;
-    }
-
-    // 3. "저장하시겠습니까?" 확인 창 딱 1번 띄우기
-    const isConfirm = confirm(`총 ${itemsToSave.length}개의 항목을 파일로 백업하고 기존 저장소를 비우시겠습니까?`);
-    if (!isConfirm) return; // 취소 누르면 중단
-
-    // 기존 데이터에 이번 항목들 합치기
+    // 1. SaveWord 데이터 불러오기
     let currentSaved = [];
     try {
         const localData = localStorage.getItem('SaveWord');
@@ -879,13 +1066,19 @@ function saveCurrentMemo() {
         currentSaved = [];
     }
 
-    const totalSaveList = currentSaved.concat(itemsToSave);
+    // 2. 저장할 데이터가 아예 없으면 실행 중단
+    if (!currentSaved || currentSaved.length === 0) {
+        alert("백업할 저장된 데이터가 없습니다.");
+        return;
+    }
 
-    // ==========================================
-    // 4. addPlusDAN.JS 파일 형태로 다운로드(기록)하기
-    // ==========================================
+    // 3. "저장하시겠습니까?" 확인 창 띄우기
+    const isConfirm = confirm(`총 ${currentSaved.length}개의 항목을 파일로 백업하고 기존 저장소를 비우시겠습니까?`);
+    if (!isConfirm) return; // 취소 누르면 중단
+
+    // 4. addPlusDAN.JS 파일 형태로 다운로드하기
     try {
-        const fileContent = `window.SaveWord = ${JSON.stringify(totalSaveList, null, 4)};`;
+        const fileContent = `window.SaveWord = ${JSON.stringify(currentSaved)};`;
         
         const blob = new Blob([fileContent], { type: 'text/javascript;charset=utf-8;' });
         const downloadLink = document.createElement("a");
@@ -899,19 +1092,108 @@ function saveCurrentMemo() {
         document.body.removeChild(downloadLink);
         URL.revokeObjectURL(downloadLink.href);
 
-        // ==========================================
         // 5. 파일 다운로드가 성공하면 브라우저 저장소 데이터 삭제 (초기화)
-        // ==========================================
         localStorage.removeItem('SaveWord');
         window.SaveWord = [];
 
-        alert(`성공적으로 ${itemsToSave.length}개의 항목이 'addPlusDAN.JS' 파일로 백업되었으며, 브라우저의 임시 저장소는 깨끗하게 비워졌습니다!`);
+        alert(`성공적으로 ${currentSaved.length}개의 항목이 'addPlusDAN.JS' 파일로 백업되었으며, 브라우저의 임시 저장소는 깨끗하게 비워졌습니다!`);
 
     } catch (error) {
         console.error("파일 다운로드 중 오류 발생:", error);
         alert("파일 다운로드 중 문제가 발생하여 저장소가 유지되었습니다.");
     }
 }
+
+//신규 저장 목록
+// 1. 메인 저장소(SaveWord) 전용 백업 함수
+function saveMainMemo() {
+    let saveWords = [];
+    try {
+        const localData = localStorage.getItem('SaveWord');
+        if (localData) {
+            saveWords = JSON.parse(localData);
+        } else if (window.SaveWord && Array.isArray(window.SaveWord)) {
+            saveWords = window.SaveWord;
+        }
+    } catch (e) {
+        saveWords = [];
+    }
+
+    if (saveWords.length === 0) {
+        alert("백업할 메인 저장소(SaveWord) 데이터가 없습니다.");
+        return;
+    }
+
+    const isConfirm = confirm(`메인 저장소(SaveWord)의 ${saveWords.length}개 항목을 'addPlusDAN.JS' 파일로 백업하고 저장소를 비우시겠습니까?`);
+    if (!isConfirm) return;
+
+    try {
+        const fileContent = `window.SaveWord = ${JSON.stringify(saveWords)};`;
+        const blob = new Blob([fileContent], { type: 'text/javascript;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "addPlusDAN.JS";
+        link.style.display = "none";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+
+        localStorage.removeItem('SaveWord');
+        window.SaveWord = [];
+
+        alert("메인 단어 백업이 완료되었습니다!");
+    } catch (error) {
+        console.error("메인 백업 오류:", error);
+        alert("백업 중 오류가 발생했습니다.");
+    }
+}
+
+// 2. 보조 애드단(AddWord) 전용 백업 함수
+function saveAddMemo() {
+    let addWords = [];
+    try {
+        const localAddData = localStorage.getItem('AddWord');
+        if (localAddData) {
+            addWords = JSON.parse(localAddData);
+        } else if (window.AddWord && Array.isArray(window.AddWord)) {
+            addWords = window.AddWord;
+        }
+    } catch (e) {
+        addWords = [];
+    }
+
+    if (addWords.length === 0) {
+        alert("백업할 애드단(AddWord) 데이터가 없습니다.");
+        return;
+    }
+
+    const isConfirm = confirm(`보조 애드단(AddWord)의 ${addWords.length}개 항목을 'addPlusAddWord.JS' 파일로 백업하고 저장소를 비우시겠습니까?`);
+    if (!isConfirm) return;
+
+    try {
+        const fileContent = `window.AddWord = ${JSON.stringify(addWords)};`;
+        const blob = new Blob([fileContent], { type: 'text/javascript;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "addPlusAddWord.JS";
+        link.style.display = "none";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+
+        localStorage.removeItem('AddWord');
+        window.AddWord = [];
+
+        alert("애드단 백업이 완료되었습니다!");
+    } catch (error) {
+        console.error("애드단 백업 오류:", error);
+        alert("백업 중 오류가 발생했습니다.");
+    }
+}
+
+
 // 추가되는 마지막 라인===============================================================
 
 
@@ -1030,16 +1312,18 @@ document.addEventListener('click', function() {
             updateStageCounts();
         }
 
-       function updateStageCounts() {
+
+     function updateStageCounts() {
     const extraCount = includeExtra ? extraPool.length : 0;
 document.getElementById("MakeWord").innerText = `${0 + extraCount} 문장`;
 document.getElementById("countWord").innerText = `${389 + extraCount} 문장`;
-    document.getElementById("count1").innerText = `${100 + extraCount} 문장`;
-    document.getElementById("count2").innerText = `${150 + extraCount} 문장`;
-    document.getElementById("count3").innerText = `${200 + extraCount} 문장`;
-    document.getElementById("count4").innerText = `${250 + extraCount} 문장`;
-    document.getElementById("count5").innerText = `${750 + extraCount} 문장`; // 👈 이 부분
+    document.getElementById("count1").innerText = `${40 + extraCount} 문장`;
+    document.getElementById("count2").innerText = `${60 + extraCount} 문장`;
+    document.getElementById("count3").innerText = `${70 + extraCount} 문장`;
+    document.getElementById("count4").innerText = `${76 + extraCount} 문장`;
+    document.getElementById("count5").innerText = `${40 + extraCount} 문장`; // 👈 이 부분
 }
+
 
         const pool1 = [
             { jp: "わたし の なまえ は チョンドンホ です", mean: "저 의 이름 은 정동호 입니다", read: "와타시 노 나마에 와 쵼돈호 데스" },
@@ -1056,11 +1340,11 @@ document.getElementById("countWord").innerText = `${389 + extraCount} 문장`;
             { jp: "この りょうり は とても おいしい です", mean: "이 요리 는 아주 맛있다 입니다", read: "코노 료우리 와 토테모 오이시이 데스" },
             { jp: "でんしゃ の じかん が おそい", mean: "전철 의 시간 이 늦다", read: "덴샤 노 지칸 가 오소이" },
             { jp: "にほんご の べんきょう は たのしい", mean: "일본어 의 공부 는 즐겁다", read: "니혼고 노 벤쿄우 와 타노시이" },
-            { jp: "まいにち じかん を まもり ます", mean: "매일 시간 을 지킵다 ~합니다", read: "마이니치 지칸 오 마모리 마스" },
+            { jp: "まい にち じかん を まもり ます", mean: "매 일 시간 을 지킵다 ~합니다", read: "마이 니치 지칸 오 마모리 마스" },
             { jp: "すこし つかれ ました", mean: "조금 지치다 ~했습니다", read: "스코시 츠카레 마시타" },
             { jp: "コヒ を いっぱい のみ ます", mean: "커피 를 한잔 마시다 ~합니다", read: "코히 오 잇빠이 노미 마스" },
             { jp: "そら が あおくて きれい です", mean: "하늘 이 파랗고 예쁨 입니다", read: "소라 가 아오쿠테 키레이 데스" },
-            { jp: "あたらしい ふく を かい ました", mean: "새로운 옷 을 사다 ~했습니다", read: "아타라시이 후쿠 오 카이 마시타" },
+            { jp: "あたら しい ふく を かい ました", mean: "새롭다 운 옷 을 사다 ~했습니다", read: "아타라 시이 후쿠 오 카이 마시타" },
             { jp: "げんき に がんばり ましょう", mean: "건강 ~하게 힘냄 ~합시다", read: "겐키 니 간바리 마쇼우" }
         ];
 
@@ -2752,6 +3036,8 @@ window.externalSentences = [
     { jp: "げんき に あいさつ を しました", mean: "건강하게 인사 를 하다 ~했습니다", read: "겐키 니 아이사츠 오 시마시타" }
 ];
 
+window.addDANadd = [
+];
     </script>
 
 </body>
