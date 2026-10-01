@@ -391,8 +391,8 @@
     <div class="memo-button-panel">
         <button class="control-btn" onclick="startVoiceInput()">음성</button>
         <button class="control-btn" onclick="startChatInput()">문자</button>
-        <button class="control-btn" onclick="startDrawingInput()">삭제</button>
-        <button class="control-btn save-btn" onclick="saveCurrentMemo()">저장</button>
+        <button class="control-btn" onclick="clearMemoDisplay()">삭제</button>
+        <button class="control-btn save-btn" onclick="saveCurrentMemo()">오답</button>
     </div>
 </div>
 
@@ -516,6 +516,8 @@
 }
 </style>
 
+	<script src="addDAN.JS"></script>
+
     <script>
 // 문자 디스플레이 시작 ===============================================================
 const memoDisplayArea = document.getElementById("memoDisplayArea");
@@ -561,32 +563,15 @@ function closeMemoPage() {
     if (stageView) stageView.classList.remove("hidden");
 }
 
+// 아직 정리못함
 // 3. [음성] 버튼: Web Speech API로 말하는 한국어 인식해서 화면에 추가하기
 function startVoiceInput() {
-    if (!('webkitSpeechRecognition' in window)) {
-        alert("이 브라우저는 음성 인식을 지원하지 않습니다. (크롬 권장)");
-        return;
-    }
-
-    const recognition = new webkitSpeechRecognition();
-    recognition.lang = 'ko-KR';
-    recognition.start();
-
-    recognition.onstart = () => {
-        console.log("음성 인식 시작...");
-    };
-
-    recognition.onresult = (event) => {
-        const spokenText = event.results[0][0].transcript;
-        addMemoItemToDisplay(spokenText); // 화면 박스에 추가
-    };
-
-    recognition.onerror = () => {
-        alert("음성 인식을 실패했습니다.");
-    };
+  alert("현재 사용 불가");
 }
 
 
+// 여기서부터 문자 관력 입력 조회 저장
+// 여기서부터 문자 관력 입력 조회 저장
 function addMemoItemToDisplay(data) {
     const displayArea = document.getElementById("memoDisplayArea");
     if (!displayArea) {
@@ -603,9 +588,16 @@ function addMemoItemToDisplay(data) {
     itemDiv.style.borderBottom = "1px solid #e0e0e0";
     itemDiv.style.color = "#333";
 
-    const jpParts = (data.jp || "").split(/\s+/);
+    // 전체 데이터베이스 통합 (검색용)
+    let fullWordDatabase = [];
+    if (typeof window.externalSentencesDan !== 'undefined' && Array.isArray(window.externalSentencesDan)) {
+        fullWordDatabase = fullWordDatabase.concat(window.externalSentencesDan);
+    }
+    if (typeof window.SaveWord !== 'undefined' && Array.isArray(window.SaveWord)) {
+        fullWordDatabase = fullWordDatabase.concat(window.SaveWord);
+    }
+
     const meanParts = (data.mean || "").split(/\s+/);
-    const readParts = (data.read || "").split(/\s+/);
 
     const jpElement = document.createElement("div");
     jpElement.className = "memo-jp";
@@ -626,9 +618,23 @@ function addMemoItemToDisplay(data) {
     readElement.style.marginTop = "2px";
     readElement.textContent = "음: ";
 
-    meanParts.forEach((meanToken, idx) => {
-        let jpToken = jpParts[idx] || "?";
-        let readToken = readParts[idx] || "?";
+    // 각 띄어쓰기 조각별로 개별 검색 수행
+    meanParts.forEach((meanToken) => {
+        const cleanToken = meanToken.toLowerCase();
+
+        // 데이터베이스에서 해당 의미(mean)와 일치하는 단어 찾기
+        const foundWord = fullWordDatabase.find(item => {
+            const itemMean = item.mean ? String(item.mean).toLowerCase() : "";
+            return itemMean === cleanToken;
+        });
+
+        let jpToken = "?";
+        let readToken = "?";
+
+        if (foundWord) {
+            jpToken = foundWord.jp || "?";
+            readToken = foundWord.read || "?";
+        }
 
         // 일본어 span 생성
         const jpSpan = document.createElement("span");
@@ -648,7 +654,6 @@ function addMemoItemToDisplay(data) {
             readSpan.style.cursor = "pointer";
             readSpan.title = "클릭하여 단어 등록";
 
-            // 클릭 시 팝업을 띄우는 공통 함수 연결
             const clickAction = function() {
                 handleQuestionClick(meanToken, jpSpan, readSpan);
             };
@@ -730,36 +735,41 @@ function startChatInput() {
 function handleQuestionClick(targetMean, jpSpanTarget, readSpanTarget) {
     // 1. 팝업으로 일본어 원문 입력 받기
     const inputJp = prompt(`[단어 등록] '${targetMean}'의 일본어 원문을 입력하세요:`, "");
-    if (!inputJp || inputJp.trim() === "") {
-        return; // 취소 시 조용히 종료
-    }
+    if (!inputJp || inputJp.trim() === "") return;
 
     // 2. 팝업으로 음(발음) 입력 받기
     const inputRead = prompt(`[단어 등록] '${targetMean}'의 음(발음)을 입력하세요:`, "");
-    if (inputRead === null) {
-        return; // 취소 시 조용히 종료
-    }
+    if (inputRead === null) return; // 취소 시 종료
 
     const cleanJp = inputJp.trim();
     const cleanMean = targetMean.trim();
     const cleanRead = inputRead.trim() !== "" ? inputRead.trim() : cleanJp;
 
-    if (!window.SaveWord || !Array.isArray(window.SaveWord)) {
-        window.SaveWord = [];
+    // 3. 기존 데이터 불러오기 (localStorage 또는 메모리에서)
+    let savedWords = [];
+    try {
+        const localData = localStorage.getItem('SaveWord');
+        if (localData) {
+            savedWords = JSON.parse(localData);
+        } else if (window.SaveWord && Array.isArray(window.SaveWord)) {
+            savedWords = window.SaveWord;
+        }
+    } catch (e) {
+        savedWords = [];
     }
 
-    window.SaveWord.push({
+    // 4. 새 데이터 추가
+    savedWords.push({
         jp: cleanJp,
         mean: cleanMean,
         read: cleanRead
     });
-    
-    // ⭐ [핵심 추가] 브라우저 로컬 스토리지에 영구 저장
-    localStorage.setItem('SaveWord', JSON.stringify(window.SaveWord));
-    
-    console.log("🔥 [SaveWord 저장 성공]:", window.SaveWord);
 
-    // 4. 화면의 '?' 요소들을 입력한 값으로 즉시 교체
+    // 5. 브라우저 localStorage에 즉시 영구 저장 (파일 다운로드 없음!)
+    localStorage.setItem('SaveWord', JSON.stringify(savedWords));
+    window.SaveWord = savedWords; // 메모리 변수도 동기화
+
+    // 6. 화면의 '?' 요소들을 입력한 값으로 즉시 교체
     if (jpSpanTarget) {
         jpSpanTarget.textContent = cleanJp + " ";
         jpSpanTarget.style.color = "#222";
@@ -774,19 +784,26 @@ function handleQuestionClick(targetMean, jpSpanTarget, readSpanTarget) {
         readSpanTarget.onclick = null;
     }
 
-    alert(`'${cleanMean}' 단어가 단어장에 성공적으로 저장되었습니다!`);
+    // 7. 바로 확인해볼 수 있도록 현재까지 저장된 전체 목록을 팝업창으로 띄워주기
+    let listText = `--- ['${cleanMean}' 등록 완료 & 전체 저장 목록] ---\n\n`;
+    savedWords.forEach((item, index) => {
+        listText += `${index + 1}. [원문] ${item.jp} | [뜻] ${item.mean} | [발음] ${item.read}\n`;
+    });
+
+    alert(listText);
 }
 
-
-// 5. [지우개] 버튼: 디스플레이창의 내용을 깨끗하게 비우기 (지렁이 기능 대체)
+// 5. [지우개] 버튼: 디스플레이창 비우기 (확실하게 작동하도록 수정)
 function clearMemoDisplay() {
     const displayArea = document.getElementById("memoDisplayArea");
     if (displayArea) {
-        displayArea.innerHTML = ""; // 안에 있는 텍스트나 항목들을 모두 초기화
+        displayArea.innerHTML = ""; // 내용 초기화
+    } else {
+        alert("디스플레이 영역('memoDisplayArea')을 찾지 못했습니다. HTML 태그의 ID를 확인해주세요.");
     }
 }
 
-// 6. [저장] 버튼: 매칭되지 않아 '?'가 포함된 항목만 골라 { jp, mean, read } 형태로 저장하는 함수
+// 6. 오답 기록 전체를 출력하고 addPlusDAN.JS 파일로 다운로드한 뒤 기존 저장소 비우기
 function saveCurrentMemo() {
     const displayArea = document.getElementById("memoDisplayArea");
     if (!displayArea) {
@@ -846,18 +863,55 @@ function saveCurrentMemo() {
     }
 
     // 3. "저장하시겠습니까?" 확인 창 딱 1번 띄우기
-    const isConfirm = confirm(`총 ${itemsToSave.length}개의 항목을 단어장에 저장하시겠습니까?`);
+    const isConfirm = confirm(`총 ${itemsToSave.length}개의 항목을 파일로 백업하고 기존 저장소를 비우시겠습니까?`);
     if (!isConfirm) return; // 취소 누르면 중단
 
-    // 4. SaveWord 배열에 최종 일괄 밀어넣기
-    itemsToSave.forEach(newItem => {
-        window.SaveWord.push(newItem);
-    });
+    // 기존 데이터에 이번 항목들 합치기
+    let currentSaved = [];
+    try {
+        const localData = localStorage.getItem('SaveWord');
+        if (localData) {
+            currentSaved = JSON.parse(localData);
+        } else if (window.SaveWord && Array.isArray(window.SaveWord)) {
+            currentSaved = window.SaveWord;
+        }
+    } catch (e) {
+        currentSaved = [];
+    }
 
-    console.log("최종 저장 완료된 SaveWord 전체 목록:", window.SaveWord);
-    alert(`성공적으로 ${itemsToSave.length}개의 항목이 { 일본어, 해석, 음 } 형태로 저장되었습니다!`);
+    const totalSaveList = currentSaved.concat(itemsToSave);
+
+    // ==========================================
+    // 4. addPlusDAN.JS 파일 형태로 다운로드(기록)하기
+    // ==========================================
+    try {
+        const fileContent = `window.SaveWord = ${JSON.stringify(totalSaveList, null, 4)};`;
+        
+        const blob = new Blob([fileContent], { type: 'text/javascript;charset=utf-8;' });
+        const downloadLink = document.createElement("a");
+        downloadLink.href = URL.createObjectURL(blob);
+        downloadLink.download = "addPlusDAN.JS";
+        
+        downloadLink.style.display = "none";
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        
+        document.body.removeChild(downloadLink);
+        URL.revokeObjectURL(downloadLink.href);
+
+        // ==========================================
+        // 5. 파일 다운로드가 성공하면 브라우저 저장소 데이터 삭제 (초기화)
+        // ==========================================
+        localStorage.removeItem('SaveWord');
+        window.SaveWord = [];
+
+        alert(`성공적으로 ${itemsToSave.length}개의 항목이 'addPlusDAN.JS' 파일로 백업되었으며, 브라우저의 임시 저장소는 깨끗하게 비워졌습니다!`);
+
+    } catch (error) {
+        console.error("파일 다운로드 중 오류 발생:", error);
+        alert("파일 다운로드 중 문제가 발생하여 저장소가 유지되었습니다.");
+    }
 }
-
 // 추가되는 마지막 라인===============================================================
 
 
@@ -1796,7 +1850,7 @@ function playBilingualAudio(jpText, krText, onComplete) {
     window.speechSynthesis.speak(jpUtter);
 }
 
-
+//단어 추가문장
 window.externalSentencesDan = [
   { jp: "わたし", mean: "나, 저", read: "와타시" },
   { jp: "あなた", mean: "당신", read: "아나타" },
@@ -2188,9 +2242,319 @@ window.externalSentencesDan = [
   { jp: "たくさん", mean: "많이", read: "타쿠산" },
   { jp: "すこし", mean: "조금", read: "스코시" },
   { jp: "ぜんぶ", mean: "전부", read: "젠부" },
-  { jp: "みんな", mean: "모두", read: "민나" }
+  { jp: "みんな", mean: "모두", read: "민나" },
+
+
+{ jp: "うえ", mean: "위", read: "우에" },
+  { jp: "した", mean: "아래", read: "시타" },
+  { jp: "なか", mean: "안", read: "나카" },
+  { jp: "そと", mean: "밖", read: "소토" },
+  { jp: "まえ", mean: "앞", read: "마에" },
+  { jp: "うしろ", mean: "뒤", read: "우시로" },
+  { jp: "となり", mean: "옆", read: "토나리" },
+  { jp: "みぎ", mean: "오른쪽", read: "미기" },
+  { jp: "ひだり", mean: "왼쪽", read: "히다리" },
+  { jp: "あいだ", mean: "사이", read: "아이다" },
+  { jp: "ちかく", mean: "가까움", read: "치카쿠" },
+  { jp: "とおく", mean: "멀리", read: "토오쿠" },
+  { jp: "まわり", mean: "주위", read: "마와리" },
+  { jp: "こうえん", mean: "공원", read: "코엔" },
+  { jp: "きょうかい", mean: "교회", read: "쿄카이" },
+  { jp: "おてら", mean: "절", read: "오테라" },
+  { jp: "せんしゅう", mean: "지난주", read: "센슈" },
+  { jp: "こんしゅう", mean: "이번 주", read: "콘슈" },
+  { jp: "らいしゅう", mean: "다음주", read: "라이슈" },
+  { jp: "きょねん", mean: "작년", read: "쿄넨" },
+  { jp: "ことし", mean: "올해", read: "코토시" },
+  { jp: "らいねん", mean: "내년", read: "라이넨" },
+  { jp: "まいつき", mean: "매월, 매달", read: "마이츠키" },
+  { jp: "まいとし", mean: "매년", read: "마이토시" },
+  { jp: "たんじょうび", mean: "생일", read: "탄조비" },
+  { jp: "じかん", mean: "시간", read: "지칸" },
+  { jp: "ぷん", mean: "분", read: "푼" },
+  { jp: "じ", mean: "시", read: "지" },
+  { jp: "はん", mean: "반", read: "한" },
+  { jp: "さっき", mean: "아까", read: "사킷키" },
+  { jp: "あと", mean: "뒤", read: "아토" },
+  { jp: "さいきん", mean: "최근", read: "사이킨" },
+  { jp: "ずっと", mean: "계속", read: "즛토" },
+  { jp: "たまに", mean: "가끔", read: "타마니" },
+  { jp: "はじめて", mean: "처음으로", read: "하지메테" },
+  { jp: "さいご", mean: "마지막", read: "사이고" },
+  { jp: "さいしょ", mean: "처음, 최초", read: "사이쇼" },
+  { jp: "きゅうに", mean: "갑자기", read: "큐니" },
+  { jp: "そろそろ", mean: "슬슬, 이제 곧", read: "소로소로" },
+  { jp: "しゅうまつ", mean: "주말", read: "슈마츠" },
+  { jp: "きゅうじつ", mean: "휴일", read: "큐지츠" },
+  { jp: "おもう", mean: "생각하다", read: "오모우" },
+  { jp: "こたえる", mean: "대답하다", read: "코타에루" },
+  { jp: "つたえる", mean: "전하다", read: "츠타에루" },
+  { jp: "つれていく", mean: "데려가다", read: "츠레테이쿠" },
+  { jp: "つれてくる", mean: "데려오다", read: "츠레테쿠루" },
+  { jp: "やめる", mean: "그만두다", read: "야메루" },
+  { jp: "かわる", mean: "변하다", read: "카와루" },
+  { jp: "うごく", mean: "움직이다", read: "우고쿠" },
+  { jp: "とぶ", mean: "뛰다", read: "토부" },
+  { jp: "のぼる", mean: "오르다", read: "노보루" },
+  { jp: "くだる", mean: "내려가다", read: "쿠다루" },
+  { jp: "いれる", mean: "넣다", read: "이레루" },
+  { jp: "だす", mean: "꺼내다", read: "다스" },
+  { jp: "ひく", mean: "당기다", read: "히쿠" },
+  { jp: "おす", mean: "밀다", read: "오스" },
+  { jp: "もっていく", mean: "가지고가다", read: "못테이쿠" },
+  { jp: "もってくる", mean: "가지고오다", read: "못테쿠루" },
+  { jp: "あつめる", mean: "모으다", read: "아츠메루" },
+  { jp: "ならべる", mean: "나열하다", read: "나라베루" },
+  { jp: "かえる", mean: "바꾸다", read: "카에루" },
+  { jp: "まう", mean: "춤추다", read: "마우" },
+  { jp: "うたう", mean: "노래하다", read: "우타우" },
+  { jp: "かざる", mean: "장식하다", read: "카자루" },
+  { jp: "つつむ", mean: "포장하다", read: "츠츠무" },
+  { jp: "みがく", mean: "닦다", read: "미가쿠" },
+  { jp: "そうじする", mean: "청소하다", read: "소지스루" },
+  { jp: "せんたくする", mean: "세탁하다", read: "센타쿠스루" },
+  { jp: "りょうりする", mean: "요리하다", read: "료리스루" },
+  { jp: "つかれる", mean: "피곤하다", read: "츠카레루" },
+  { jp: "こわがる", mean: "무서워하다", read: "코와가루" },
+  { jp: "べんきょうする", mean: "공부하다", read: "벤쿄스루" },
+  { jp: "れんしゅうする", mean: "연습하다", read: "렌슈스루" },
+  { jp: "しごとをする", mean: "일하다", read: "시고토오스루" },
+  { jp: "さんぽする", mean: "산책하다", read: "산포스루" },
+  { jp: "りょこうする", mean: "여행하다", read: "료코스루" },
+  { jp: "りょうかいする", mean: "승낙하다", read: "료카이스루" },
+  { jp: "けんかする", mean: "싸우다", read: "켄카스루" },
+  { jp: "おおい", mean: "많다", read: "오이" },
+  { jp: "すくない", mean: "적다", read: "스쿠나이" },
+  { jp: "ただしい", mean: "올바르다, 맞다", read: "타다시이" },
+  { jp: "つよい", mean: "강하다", read: "츠요이" },
+  { jp: "よわい", mean: "약하다", read: "요와이" },
+  { jp: "だいすき", mean: "매우 좋아함", read: "다이스키" },
+  { jp: "だいきらい", mean: "매우 싫어함", read: "다이키라이" },
+  { jp: "しずか", mean: "조용하다", read: "시즈카" },
+  { jp: "にぎやか", mean: "번화하다", read: "니기야카" },
+  { jp: "さびしい", mean: "쓸쓸하다", read: "사비시이" },
+  { jp: "くるしい", mean: "괴롭다, 힘들다", read: "쿠루시이" },
+  { jp: "ねむい", mean: "졸리다", read: "네무이" },
+  { jp: "つかれた", mean: "피곤하다", read: "츠카레타" },
+  { jp: "あまい", mean: "달다", read: "아마이" },
+  { jp: "からい", mean: "맵다, 짜다", read: "카라이" },
+  { jp: "にがい", mean: "쓰다", read: "니가이" },
+  { jp: "すっぱい", mean: "시다", read: "슷파이" },
+  { jp: "こまかい", mean: "세밀하다", read: "코마카이" },
+  { jp: "こい", mean: "진하다", read: "코이" },
+  { jp: "うすい", mean: "연하다, 얇다", read: "우수이" },
+  { jp: "まるい", mean: "둥글다", read: "마루이" },
+  { jp: "しかくい", mean: "네모나다", read: "시카쿠이" },
+  { jp: "とくべつ", mean: "특별하다", read: "토쿠베츠" },
+  { jp: "ふつう", mean: "보통이다", read: "후츠우" },
+  { jp: "てきとう", mean: "적당하다", read: "테키토우" },
+  { jp: "あんぜん", mean: "안전하다", read: "안젠" },
+  { jp: "きけん", mean: "위험하다", read: "키켄" },
+  { jp: "ちがう", mean: "다르다", read: "치가우" },
+  { jp: "やくそく", mean: "약속", read: "야쿠소쿠" },
+  { jp: "ゆめ", mean: "꿈", read: "유메" },
+  { jp: "きぼう", mean: "희망", read: "키보" },
+  { jp: "けいかく", mean: "계획", read: "케이카쿠" },
+  { jp: "りゆう", mean: "이유", read: "리유" },
+  { jp: "ばあい", mean: "경우", read: "바아이" },
+  { jp: "こたえ", mean: "정답", read: "코타에" },
+  { jp: "もんだい", mean: "문제", read: "몬다이" },
+  { jp: "しつもん", mean: "질문", read: "시츠몬" },
+  { jp: "いけん", mean: "의견", read: "이켄" },
+  { jp: "まちがい", mean: "실수, 틀림", read: "마치가이" },
+  { jp: "じゅんび", mean: "준비", read: "쥰비" },
+  { jp: "おと", mean: "소리", read: "오토" },
+  { jp: "におい", mean: "냄새", read: "니오이" },
+  { jp: "あじ", mean: "맛", read: "아지" },
+  { jp: "ねつ", mean: "열", read: "네츠" },
+  { jp: "いたみ", mean: "통증", read: "이타미" },
+  { jp: "びょうき", mean: "병, 질병", read: "뵤키" },
+  { jp: "くすり", mean: "약", read: "쿠스리" },
+  { jp: "いしゃ", mean: "의사", read: "이샤" },
+  { jp: "かんごふ", mean: "간호사", read: "캉고후" },
+  { jp: "けいさつ", mean: "경찰", read: "케이사츠" },
+  { jp: "ゆうびん", mean: "우편", read: "유빈" },
+  { jp: "きっぷ", mean: "표, 승차권", read: "킷푸" },
+  { jp: "おかね", mean: "돈", read: "오카네" },
+  { jp: "レシート", mean: "영수증", read: "레시토" },
+  { jp: "かど", mean: "모퉁이", read: "카도" },
+  { jp: "かべ", mean: "벽", read: "카베" },
+  { jp: "ゆか", mean: "바닥", read: "유카" },
+  { jp: "やね", mean: "지붕", read: "야네" },
+  { jp: "くも", mean: "구름", read: "쿠모" },
+  { jp: "かみなり", mean: "천둥, 번개", read: "카미나리" },
+  { jp: "にじ", mean: "무지개", read: "니지" },
+  { jp: "なす", mean: "가지", read: "나스" },
+  { jp: "キャベツ", mean: "양배추", read: "캬베츠" },
+  { jp: "ぎゅうにく", mean: "소고기", read: "규니쿠" },
+  { jp: "ぶたにく", mean: "돼지고기", read: "부타니쿠" },
+  { jp: "とりにく", mean: "닭고기", read: "토리니쿠" },
+  { jp: "みそ", mean: "된장", read: "미소" },
+  { jp: "す", mean: "식초", read: "스" },
+  { jp: "あぶら", mean: "기름", read: "아부라" },
+  { jp: "こめ", mean: "쌀", read: "코메" },
+  { jp: "むぎ", mean: "보리", read: "무기" },
+  { jp: "こな", mean: "가루", read: "코나" },
+  { jp: "かわ", mean: "가죽, 껍질", read: "카와" },
+  { jp: "ほね", mean: "뼈", read: "호네" },
+  { jp: "ち", mean: "피", read: "치" },
+  { jp: "ひげ", mean: "수염", read: "히게" },
+  { jp: "はだ", mean: "피부", read: "하다" },
+  { jp: "のど", mean: "목구멍", read: "노도" },
+  { jp: "こし", mean: "허리", read: "코시" },
+  { jp: "かかと", mean: "발뒤꿈치", read: "카카토" },
+  { jp: "つめ", mean: "손발톱", read: "츠메" },
+  { jp: "しんせき", mean: "친척", read: "신세키" },
+  { jp: "しゃいん", mean: "사원", read: "샤인" },
+  { jp: "きゃく", mean: "손님", read: "캬쿠" },
+
+
+{ jp: "くうき", mean: "공기", read: "쿠우키" },
+  { jp: "きしゃ", mean: "기차", read: "키샤" },
+  { jp: "み港", mean: "항구", read: "미나토" },
+  { jp: "ちほう", mean: "지방", read: "치호우" },
+  { jp: "いなか", mean: "시골", read: "이나카" },
+  { jp: "とし", mean: "도시, 나이", read: "토시" },
+  { jp: "けいき", mean: "경기", read: "케이키" },
+  { jp: "しきん", mean: "자금", read: "시킨" },
+  { jp: "ぼうえき", mean: "무역", read: "보우에키" },
+  { jp: "けいざい", mean: "경제", read: "케이자이" },
+  { jp: "せいじ", mean: "정치", read: "세이지" },
+  { jp: "しゃかい", mean: "사회", read: "샤카이" },
+  { jp: "きぎょう", mean: "기업", read: "키교우" },
+  { jp: "おうぼ", mean: "응모", read: "오우보" },
+  { jp: "さいよう", mean: "채용", read: "사이요우" },
+  { jp: "きゅうよ", mean: "급여", read: "큐우요" },
+  { jp: "ざんぎょう", mean: "잔업, 야근", read: "잔교우" },
+  { jp: "きゅうか", mean: "휴가", read: "큐우카" },
+  { jp: "しゅっちょう", mean: "출장", read: "슛쵸우" },
+  { jp: "かいぎ", mean: "회의", read: "카이기" },
+  { jp: "そうだん", mean: "상담", read: "소우단" },
+  { jp: "けっか", mean: "결과", read: "켓카" },
+  { jp: "せいこう", mean: "성공", read: "세이코우" },
+  { jp: "しっぱい", mean: "실패", read: "싯파이" },
+  { jp: "どりょく", mean: "노력", read: "도료쿠" },
+  { jp: "こくさい", mean: "국제", read: "코쿠사이" },
+  { jp: "かんけい", mean: "관계", read: "칸케이" },
+  { jp: "きょうりょく", mean: "협력", read: "쿄우료쿠" },
+  { jp: "いみ", mean: "의미", read: "이미" },
+  { jp: "きぶん", mean: "기분", read: "키분" },
+  { jp: "かんそう", mean: "감상, 소감", read: "칸소우" },
+  { jp: "きおく", mean: "기억", read: "키오쿠" },
+  { jp: "きぼう", mean: "희망", read: "키보우" },
+  { jp: "もくてき", mean: "목적", read: "모쿠테키" },
+  { jp: "じゅんばん", mean: "순서", read: "쥰반" },
+  { jp: "てじゅん", mean: "순서, 절차", read: "테쥰" },
+  { jp: "ほう法", mean: "방법", read: "호우호우" },
+  { jp: "きかい", mean: "기계, 기회", read: "키카이" },
+  { jp: "でんげん", mean: "전원", read: "덴겐" },
+  { jp: "こしょう", mean: "고장", read: "코쇼우" },
+  { jp: "しゅうり", mean: "수리", read: "슈우리" },
+  { jp: "かいてん", mean: "회전", read: "카이텐" },
+  { jp: "けんさ", mean: "검사", read: "켄사" },
+  { jp: "そくど", mean: "속도", read: "소쿠도" },
+  { jp: "げんいん", mean: "원인", read: "겐인" },
+  { jp: "たいさく", "mean": "대책", read: "타이사쿠" },
+  { jp: "じょうきょう", mean: "상황", read: "죠우쿄우" },
+  { jp: "じょうほう", mean: "정보", read: "죠우호우" },
+  { jp: "しんこう", mean: "진행", read: "신코우" },
+  { jp: "かんせい", mean: "완성", read: "칸세이" },
+
+// --- [1글자짜리 기본 조사 및 어조사] ---
+  { jp: "の", mean: "의", read: "노" },
+  { jp: "は", mean: "는", read: "와" },
+  { jp: "が", mean: "이", read: "가" },
+  { jp: "を", mean: "을", read: "오" },
+  { jp: "に", mean: "에", read: "니" },
+  { jp: "で", mean: "에서", read: "데" },
+  { jp: "と", mean: "와", read: "토" },
+  { jp: "も", mean: "도", read: "모" },
+  { jp: "か", mean: "인가?", read: "카" },
+  { jp: "や", mean: "랑", read: "야" },
+  { jp: "て", mean: "해서", read: "테" },
+  { jp: "ね", mean: "네요", read: "네" },
+  { jp: "よ", mean: "에요", read: "요" },
+  { jp: "わ", mean: "예요", read: "와" },
+  { jp: "さ", mean: "있잖아", read: "사" },
+  { jp: "な", mean: "네", read: "나" },
+
+  // --- [2글자짜리 복합 조사 및 연결어] ---
+  { jp: "から", mean: "부터", read: "카라" },
+  { jp: "まで", mean: "까지", read: "마데" },
+  { jp: "より", mean: "보다", read: "요리" },
+  { jp: "ほど", mean: "정도", read: "호도" },
+  { jp: "でも", mean: "하지만", read: "데모" },
+  { jp: "だけ", mean: "만", read: "다케" },
+  { jp: "なら", mean: "라면", read: "나라" },
+  { jp: "けど", mean: "지만", read: "케도" },
+  { jp: "のに", mean: "인데도불구하고", read: "노니" },
+  { jp: "ので", mean: "해서", read: "노데" },
+  { jp: "たら", mean: "하면", read: "타라" },
+  { jp: "ながら", mean: "하면서", read: "나가라" },
+  { jp: "とか", mean: "라든지", read: "토카" },
+  { jp: "かも", mean: "지도모른다", read: "카모" },
+  { jp: "こそ", mean: "야말로", read: "코소" },
+  { jp: "なお", mean: "게다가", read: "나오" },
+  { jp: "では", mean: "에서는", read: "데와" },
+  { jp: "のり", mean: "분위기", read: "노리" },
+  { jp: "こそ", mean: "야말로", read: "코소" },
+  { jp: "しも", mean: "꼭", read: "시모" },
+  { jp: "つか", mean: "그러니까", read: "츠카" },
+
+
+// --- [기본 종결 및 상태 표현] ---
+  { jp: "ます", mean: "합니다", read: "마스" },
+  { jp: "ません", mean: "하지않습니다", read: "마셍" },
+  { jp: "ました", mean: "했습니다", read: "마시타" },
+  { jp: "ましょう", mean: "합시다", read: "마쇼" },
+  { jp: "だ", mean: "이다", read: "다" },
+  { jp: "です", mean: "입니다", read: "데스" },
+  { jp: "だった", mean: "이었다", read: "닷타" },
+  { jp: "でした", mean: "였습니다", read: "데시타" },
+
+  // --- [가능, 추측, 양태 및 단정] ---
+  { jp: "できる", mean: "할수있다", read: "데키루" },
+  { jp: "できるよ", mean: "할수있어", read: "데키루요" },
+  { jp: "できるね", mean: "할수있네", read: "데키루네" },
+  { jp: "だろう", mean: "겠지", read: "다로" },
+  { jp: "でしょう", mean: "일겁니다", read: "데쇼" },
+  { jp: "ようだ", mean: "인것같다", read: "요다" },
+  { jp: "みたい", mean: "인것같다", read: "미타이" },
+  { jp: "らしい", mean: "라는것같다", read: "라시이" },
+  { jp: "はずだ", mean: "할것이다", read: "하즈다" },
+  { jp: "わけだ", mean: "인것이다", read: "와케다" },
+
+  // --- [원망 및 권유·충고] ---
+  { jp: "たい", mean: "하고싶다", read: "타이" },
+  { jp: "たくない", mean: "하고싶지않다", read: "타쿠나이" },
+  { jp: "たがる", mean: "하고싶어하다", read: "타가루" },
+  { jp: "ほうがいい", mean: "하는편이좋다", read: "호가 이이" },
+
+  // --- [변화 및 시도·결과] ---
+  { jp: "なる", mean: "가되다", read: "나루" },
+  { jp: "なった", mean: "되었다", read: "낫타" },
+  { jp: "おく", mean: "해두다", read: "오쿠" },
+  { jp: "しまう", mean: "해버리다", read: "시마우" },
+
+  // --- [존재, 긍정 및 부정 단독 서술] ---
+  { jp: "ある", mean: "있다", read: "아루" },
+  { jp: "いる", mean: "있다", read: "이루" },
+  { jp: "ない", mean: "없다", read: "나이" },
+  { jp: "あるよ", mean: "있어", read: "아루요" },
+  { jp: "いるよ", mean: "있어", read: "이루요" },
+  { jp: "ないよ", mean: "없어", read: "나이요" },
+  { jp: "いいよ", mean: "좋아", read: "이이요" },
+  { jp: "ちがう", mean: "아니다", read: "치가우" },
+  { jp: "ちがうよ", mean: "아니야", read: "치가우요" },
+  { jp: "だめ", mean: "안돼", read: "다메" },
+  { jp: "むり", mean: "안돼", read: "무리" },
+  { jp: "いい", mean: "좋다", read: "이이" },
+  { jp: "わるい", mean: "나쁘다", read: "와루이" }
+
 ];
 
+
+//긴 추가문장
 window.externalSentences = [
     { jp: "おはよう ござい ます", mean: "이르다 존재하다 ~합니다", read: "오하요우 고자이 마스" },
     { jp: "こん にち は", mean: "지금 일 은", read: "콘 니치 와" },
@@ -2386,11 +2750,6 @@ window.externalSentences = [
     { jp: "べんり な きかい を かいました", mean: "편리한 기계 를 사다 ~했습니다", read: "벤리 나 키카이 오 카이마시타" },
     { jp: "こころ を こめて もじ を かきました", mean: "마음 을 담아 글자 를 쓰다 ~했습니다", read: "코코로 오 코메테 모지 오 카키마시타" },
     { jp: "げんき に あいさつ を しました", mean: "건강하게 인사 를 하다 ~했습니다", read: "겐키 니 아이사츠 오 시마시타" }
-];
-
-window.SaveWord = [
-{ jp: "げんき に あいさつ を しました", mean: "건강하게 인사 를 하다 ~했습니다", read: "겐키 니 아이사츠 오 시마시타" }
-
 ];
 
     </script>
