@@ -1051,60 +1051,124 @@ function clearMemoDisplay() {
 
 
 
-// 6. localStorage에 저장된 SaveWord 데이터를 파일로 안전하게 다운로드하고 저장소 비우기
-function saveCurrentMemo() {
-    // 1. SaveWord 데이터 불러오기
-    let currentSaved = [];
+function handleQuestionClick(targetMean, jpSpanTarget, readSpanTarget) {
+    // 1. 팝업으로 일본어 원문 입력 받기
+    const inputJp = prompt(`[단어 등록] '${targetMean}'의 일본어 원문을 입력하세요:`, "");
+    if (!inputJp || !inputJp.trim()) return;
+
+    // 2. 팝업으로 음(발음) 입력 받기
+    const inputRead = prompt(`[단어 등록] '${targetMean}'의 음(발음)을 입력하세요:`, "");
+    if (inputRead === null) return; // 취소 시 종료
+
+    const cleanJp = inputJp.trim();
+    const cleanMean = targetMean.trim();
+    const cleanRead = inputRead.trim() !== "" ? inputRead.trim() : cleanJp;
+
+    const newItem = {
+        jp: cleanJp,
+        mean: cleanMean,
+        read: cleanRead
+    };
+
+    // ==========================================
+    // [1] 핵심 조회: 내가 입력한 일본어가 익스텐션 단어장에 있는가?
+    // ==========================================
+    let existsInExternal = false;
+    if (typeof window.externalSentencesDan !== 'undefined' && Array.isArray(window.externalSentencesDan)) {
+        existsInExternal = window.externalSentencesDan.some(item => {
+            const itemJp = (typeof item === 'string') ? item : item.jp;
+            return itemJp && itemJp.trim() === cleanJp;
+        });
+    }
+
+    // ==========================================
+    // [2] 메인 저장소(SaveWord)는 뜻이 다르므로 무조건 저장
+    // ==========================================
+    let savedWords = [];
     try {
         const localData = localStorage.getItem('SaveWord');
         if (localData) {
-            currentSaved = JSON.parse(localData);
+            savedWords = JSON.parse(localData);
         } else if (window.SaveWord && Array.isArray(window.SaveWord)) {
-            currentSaved = window.SaveWord;
+            savedWords = window.SaveWord;
         }
     } catch (e) {
-        currentSaved = [];
+        savedWords = [];
     }
 
-    // 2. 저장할 데이터가 아예 없으면 실행 중단
-    if (!currentSaved || currentSaved.length === 0) {
-        alert("백업할 저장된 데이터가 없습니다.");
-        return;
-    }
+    savedWords.push(newItem);
+    localStorage.setItem('SaveWord', JSON.stringify(savedWords));
+    window.SaveWord = savedWords;
 
-    // 3. "저장하시겠습니까?" 확인 창 띄우기
-    const isConfirm = confirm(`총 ${currentSaved.length}개의 항목을 파일로 백업하고 기존 저장소를 비우시겠습니까?`);
-    if (!isConfirm) return; // 취소 누르면 중단
-
-    // 4. addPlusDAN.JS 파일 형태로 다운로드하기
+    // ==========================================
+    // [3] 보조 저장소(AddWord) 판별 및 저장
+    // ==========================================
+    let addWords = [];
     try {
-        const fileContent = `window.SaveWord = ${JSON.stringify(currentSaved)};`;
-        
-        const blob = new Blob([fileContent], { type: 'text/javascript;charset=utf-8;' });
-        const downloadLink = document.createElement("a");
-        downloadLink.href = URL.createObjectURL(blob);
-        downloadLink.download = "addPlusDAN.JS";
-        
-        downloadLink.style.display = "none";
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        
-        document.body.removeChild(downloadLink);
-        URL.revokeObjectURL(downloadLink.href);
-
-        // 5. 파일 다운로드가 성공하면 브라우저 저장소 데이터 삭제 (초기화)
-        localStorage.removeItem('SaveWord');
-        window.SaveWord = [];
-
-        alert(`성공적으로 ${currentSaved.length}개의 항목이 'addPlusDAN.JS' 파일로 백업되었으며, 브라우저의 임시 저장소는 깨끗하게 비워졌습니다!`);
-
-    } catch (error) {
-        console.error("파일 다운로드 중 오류 발생:", error);
-        alert("파일 다운로드 중 문제가 발생하여 저장소가 유지되었습니다.");
+        const localAddData = localStorage.getItem('AddWord');
+        if (localAddData) {
+            addWords = JSON.parse(localAddData);
+        } else if (window.AddWord && Array.isArray(window.AddWord)) {
+            addWords = window.AddWord;
+        }
+    } catch (e) {
+        addWords = [];
     }
+
+    let isAddWordSaved = false;
+
+    // 익스텐션 단어장에 없다면? -> 보조 저장소에도 저장 (둘 다 저장)
+    if (!existsInExternal) {
+        // 보조 저장소 내 중복 방지 체크 한번 더
+        const alreadyInAdd = addWords.some(item => {
+            const itemJp = (typeof item === 'string') ? item : item.jp;
+            return itemJp && itemJp.trim() === cleanJp;
+        });
+
+        if (!alreadyInAdd) {
+            addWords.push(newItem);
+            localStorage.setItem('AddWord', JSON.stringify(addWords));
+            window.AddWord = addWords;
+            isAddWordSaved = true;
+        }
+    } 
+    // 익스텐션 단어장에 이미 있다면? -> 보조 저장은 패스 (메인에만 저장)
+    else {
+        isAddWordSaved = false;
+    }
+
+    // ==========================================
+    // [4] 화면 UI 업데이트 및 결과 안내
+    // ==========================================
+    if (jpSpanTarget) {
+        jpSpanTarget.textContent = cleanJp + " ";
+        jpSpanTarget.style.color = "#222";
+        jpSpanTarget.style.cursor = "default";
+        jpSpanTarget.onclick = null;
+    }
+
+    if (readSpanTarget) {
+        readSpanTarget.textContent = cleanRead + " ";
+        readSpanTarget.style.color = "#666";
+        readSpanTarget.style.cursor = "default";
+        readSpanTarget.onclick = null;
+    }
+
+    let listText = `--- ['${cleanMean}' 등록 완료] ---\n`;
+    if (isAddWordSaved) {
+        listText += `✨ [둘 다 저장] 익스텐션 단어장에 없던 단어이므로 메인과 보조 저장소 모두에 저장되었습니다!\n`;
+    } else {
+        listText += `🛡 [하나만 저장] 익스텐션 단어장에 이미 존재하는 일본어이므로 보조 저장은 패스하고 메인 저장소에만 뜻이 추가되었습니다.\n`;
+    }
+    
+    alert(listText);
 }
 
-//신규 저장 목록
+// 6. localStorage에 저장된 SaveWord 데이터를 파일로 안전하게 다운로드하고 저장소 비우기
+function saveCurrentMemo() {
+    saveMainMemo();
+}
+
 // 1. 메인 저장소(SaveWord) 전용 백업 함수
 function saveMainMemo() {
     let saveWords = [];
@@ -1192,6 +1256,7 @@ function saveAddMemo() {
         alert("백업 중 오류가 발생했습니다.");
     }
 }
+
 
 
 // 추가되는 마지막 라인===============================================================
