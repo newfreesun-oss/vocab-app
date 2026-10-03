@@ -392,8 +392,11 @@
         <button class="control-btn" onclick="startVoiceInput()">음성</button>
         <button class="control-btn" onclick="startChatInput()">문자</button>
         <button class="control-btn" onclick="clearMemoDisplay()">삭제</button>
+	<button class="control-btn save-btnRED" onclick="saveALLDAN()">저장</button>
+
         <button class="control-btn save-btn" onclick="saveCurrentMemo()">오답</button>
 	<button class="control-btn save-btn" onclick="saveAddMemo()">신규</button>
+	<button class="control-btn save-btn" onclick="saveAddMemoALL()">문장</button>
     </div>
 </div>
 
@@ -508,6 +511,14 @@
         border: none;
     }
     .save-btn:hover { background-color: #45a049; }
+.save-btnRED {
+    background-color: #ff6b6b; /* 산뜻하고 화사한 코랄 레드 */
+    color: white;
+    border: none;
+}
+.save-btnRED:hover {
+    background-color: #fa5252;
+}
 .memoDisplayArea {
     /* 모바일에서 터치/스크롤이 자연스럽게 작동하도록 설정 */
     touch-action: pan-y;         /* 세로 스크롤은 허용하되 제스처 충돌 방지 */
@@ -1137,8 +1148,11 @@ function handleQuestionClick(targetMean, jpSpanTarget, readSpanTarget) {
         isAddWordSaved = false;
     }
 
+
+// 4번 기능 삭제
+
     // ==========================================
-    // [4] 화면 UI 업데이트 및 결과 안내
+    // [5] 화면 UI 업데이트 및 결과 안내
     // ==========================================
     if (jpSpanTarget) {
         jpSpanTarget.textContent = cleanJp + " ";
@@ -1163,6 +1177,8 @@ function handleQuestionClick(targetMean, jpSpanTarget, readSpanTarget) {
     
     alert(listText);
 }
+
+
 
 // 6. localStorage에 저장된 SaveWord 데이터를 파일로 안전하게 다운로드하고 저장소 비우기
 function saveCurrentMemo() {
@@ -1257,6 +1273,159 @@ function saveAddMemo() {
     }
 }
 
+// 3. 통합 문장 백업 함수 (sumAddWord)
+function saveAddMemoALL() {
+    let sumAddWords = [];
+    try {
+        const localSumData = localStorage.getItem('sumAddWord');
+        if (localSumData) {
+            sumAddWords = JSON.parse(localSumData);
+        } else if (window.sumAddWord && Array.isArray(window.sumAddWord)) {
+            sumAddWords = window.sumAddWord;
+        }
+    } catch (e) {
+        sumAddWords = [];
+    }
+
+    if (sumAddWords.length === 0) {
+        alert("백업할 통합 단어장(sumAddWord) 데이터가 없습니다.");
+        return;
+    }
+
+    // ★ 수정된 부분: ${sumAddWords.length}개 항목을 로 올바르게 닫아주었습니다.
+    const isConfirm = confirm(`통합 문장 단어장의 ${sumAddWords.length}개 항목을 'sumAddWord.txt' 파일로 백업하고 저장소를 비우시겠습니까?`);
+    if (!isConfirm) return;
+
+    try {
+        const fileContent = `window.sumAddWord = ${JSON.stringify(sumAddWords)};`;
+        
+        // 안전한 .txt 형식으로 Blob 생성
+        const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "sumAddWord.txt"; // 파일명을 sumAddWord.txt로 지정
+        
+        document.body.appendChild(link);
+        link.click();
+        
+        setTimeout(() => {
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }, 100);
+
+        // 정상 백업 확인 후 sumAddWord 저장소 및 메모리 초기화
+        localStorage.removeItem('sumAddWord');
+        window.sumAddWord = [];
+
+        alert("통합 문장 단어장 백업 및 초기화가 완료되었습니다!");
+    } catch (error) {
+        console.error("통합 백업 오류:", error);
+        alert("백업 중 오류가 발생했습니다.");
+    }
+}
+
+//===================================================================================
+function saveALLDAN() {
+    // 1. 전체 페이지가 아니라, 진짜 문장들이 누적되는 '디스플레이 영역(memoDisplayArea)'만 정확히 지목합니다.
+    const displayArea = document.getElementById('memoDisplayArea');
+    
+    if (!displayArea) {
+        alert("⚠️ 기록 디스플레이 영역을 찾지 못했습니다.");
+        return;
+    }
+
+    // 디스플레이 안의 개별 문장/아이템 블록들을 모두 찾습니다. (없으면 디스플레이 전체 박스 자체를 대상으로 삼음)
+    const cardContainers = displayArea.querySelectorAll('.memo-item, div, p');
+    
+    let sumAddWords = [];
+    try {
+        const localSumData = localStorage.getItem('sumAddWord');
+        if (localSumData) {
+            sumAddWords = JSON.parse(localSumData);
+        } else if (window.sumAddWord && Array.isArray(window.sumAddWord)) {
+            sumAddWords = window.sumAddWord;
+        }
+    } catch (e) {
+        sumAddWords = [];
+    }
+
+    let savedCount = 0;
+    let skippedCount = 0;
+
+    // 2. 각 영역을 돌며 텍스트 파싱
+    cardContainers.forEach(card => {
+        const textContent = card.innerText || "";
+        if (!textContent.trim()) return;
+
+        // [조건 1] 화면에 '?'가 단 하나라도 있으면 미완성 문장이므로 패스!
+        if (textContent.includes('?')) {
+            return; 
+        }
+
+        // 줄바꿈 기준으로 쪼개기
+        const lines = textContent.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        
+        // 정확히 3줄 세트(일본어, 뜻, 음) 형태를 갖춘 것만 인정
+        if (lines.length < 3) return; 
+
+        const fullJp = lines[0];
+        const fullMean = lines[1];
+        
+        // [핵심 요구사항] '음:' 이나 '읽기:' 같은 글자가 붙어있으면 깔끔하게 제거!
+        let fullRead = lines[2].replace(/^(음|읽기)\s*[:：]\s*/, '').trim();
+
+        // [조건 2] 메뉴 이름, 버튼 글자, UI 안내 문구 등은 확실하게 필터링
+        const ignoreWords = ["음성", "문자", "삭제", "정답화면", "지우개", "←", "수첩"];
+        if (ignoreWords.some(word => fullJp.includes(word) || fullMean.includes(word))) {
+            return; // UI 메뉴 글자면 저장 대상에서 제외
+        }
+
+        // [조건 3] 익스텐션 단어장(externalSentences 또는 externalSentencesDan)에 이미 있는 일본어라면 제외
+        let existsInExternal = false;
+        const targetExternalList = window.externalSentences || window.externalSentencesDan;
+        
+        if (targetExternalList && Array.isArray(targetExternalList)) {
+            existsInExternal = targetExternalList.some(item => {
+                const itemJp = (typeof item === 'string') ? item : item.jp;
+                return itemJp && itemJp.trim() === fullJp.trim();
+            });
+        }
+
+        if (existsInExternal) {
+            skippedCount++;
+            return;
+        }
+
+        // 최종 저장할 깔끔한 세트 구조 (음: 글자 빠짐 확인 완료)
+        const finalSentenceRow = {
+            jp: fullJp,
+            mean: fullMean,
+            read: fullRead
+        };
+
+        // sumAddWord 내 중복 방지 체크 후 추가/갱신
+        const existingIndex = sumAddWords.findIndex(item => item.jp === fullJp);
+        if (existingIndex !== -1) {
+            sumAddWords[existingIndex] = finalSentenceRow;
+        } else {
+            sumAddWords.push(finalSentenceRow);
+        }
+
+        savedCount++;
+    });
+
+    // 3. 최종 저장소 반영
+    if (savedCount > 0) {
+        localStorage.setItem('sumAddWord', JSON.stringify(sumAddWords));
+        window.sumAddWord = sumAddWords;
+        alert(`✨ 저장 완료!\n- 새로 저장된 문장: ${savedCount}개\n- 익스텐션 단어장에 있어 제외된 문장: ${skippedCount}개`);
+    } else {
+        alert(`⚠️ 저장할 수 있는 완성된 문장이 없습니다.\n(디스플레이에 '?'가 없는 완벽한 문장 세트만 저장됩니다.)`);
+    }
+}
+//==================================================================장문 저장
 
 
 // 추가되는 마지막 라인===============================================================
