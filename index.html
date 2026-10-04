@@ -1086,26 +1086,39 @@ function handleQuestionClick(targetMean, jpSpanTarget, readSpanTarget) {
     };
 
     // ==========================================
-    // [1] 핵심 조회: window.externalSentencesDan 또는 window.addDANadd에 있는가?
+    // [1] 디버깅 포함 철저한 두 곳 조회 로직
     // ==========================================
     let existsInExternal = false;
-    
-    // 1. externalSentencesDan 조회
+    const targetJp = String(cleanJp || "").trim();
+
+    console.log("🔍 [조회 시작] 찾으려는 단어:", JSON.stringify(targetJp));
+
+    // 1. externalSentencesDan 확인
     if (typeof window.externalSentencesDan !== 'undefined' && Array.isArray(window.externalSentencesDan)) {
         existsInExternal = window.externalSentencesDan.some(item => {
-            const itemJp = (typeof item === 'string') ? item : item.jp;
-            return itemJp && itemJp.trim() === cleanJp;
+            const itemJp = String((typeof item === 'string' ? item : item?.jp) || "").trim();
+            return itemJp === targetJp;
         });
     }
 
-    // 2. 만약 첫 번째에 없다면 addDANadd도 마저 조회
-    if (!existsInExternal && typeof window.addDANadd !== 'undefined' && Array.isArray(window.addDANadd)) {
-        existsInExternal = window.addDANadd.some(item => {
-            const itemJp = (typeof item === 'string') ? item : item.jp;
-            return itemJp && itemJp.trim() === cleanJp;
-        });
+    // 2. addDANadd 확인
+    if (!existsInExternal) {
+        if (typeof window.addDANadd !== 'undefined' && Array.isArray(window.addDANadd)) {
+            console.log("📦 window.addDANadd 데이터 개수:", window.addDANadd.length);
+            existsInExternal = window.addDANadd.some(item => {
+                const itemJp = String((typeof item === 'string' ? item : item?.jp) || "").trim();
+                // 비교 과정 로그 확인용
+                if (itemJp === targetJp) {
+                    console.log("✨ 매칭 성공! 일치하는 항목:", item);
+                }
+                return itemJp === targetJp;
+            });
+        } else {
+            console.warn("⚠️ 경고: window.addDANadd가 정의되지 않았거나 배열이 아닙니다!", window.addDANadd);
+        }
     }
 
+    console.log("🏁 최종 조회 결과 (existsInExternal):", existsInExternal);
     // ==========================================
     // [2] 메인 저장소(SaveWord)는 뜻이 다르므로 무조건 저장
     // ==========================================
