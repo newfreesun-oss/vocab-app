@@ -1086,11 +1086,21 @@ function handleQuestionClick(targetMean, jpSpanTarget, readSpanTarget) {
     };
 
     // ==========================================
-    // [1] 핵심 조회: 내가 입력한 일본어가 익스텐션 단어장에 있는가?
+    // [1] 핵심 조회: window.externalSentencesDan 또는 window.addDANadd에 있는가?
     // ==========================================
     let existsInExternal = false;
+    
+    // 1. externalSentencesDan 조회
     if (typeof window.externalSentencesDan !== 'undefined' && Array.isArray(window.externalSentencesDan)) {
         existsInExternal = window.externalSentencesDan.some(item => {
+            const itemJp = (typeof item === 'string') ? item : item.jp;
+            return itemJp && itemJp.trim() === cleanJp;
+        });
+    }
+
+    // 2. 만약 첫 번째에 없다면 addDANadd도 마저 조회
+    if (!existsInExternal && typeof window.addDANadd !== 'undefined' && Array.isArray(window.addDANadd)) {
+        existsInExternal = window.addDANadd.some(item => {
             const itemJp = (typeof item === 'string') ? item : item.jp;
             return itemJp && itemJp.trim() === cleanJp;
         });
