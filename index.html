@@ -1849,7 +1849,8 @@ function startWordPractice() {
                     : [];
 
     // 2. 추가할 180개 단어 데이터 가져오기
-    let addData = window.danList || window.externalSentencesDan || window.externalSentences || [];
+    //window.danList || window.externalSentencesDan || 삭제
+	let addData = window.MYNICHIDANadd || [];
     if (addData.length === 0 && typeof danList !== 'undefined') addData = danList;
 
     // 3. 만약 기존 리스트가 아예 비어있었다면 addData로 시작, 아니면 기존 리스트에 addData를 누적(concat)
