@@ -325,7 +325,11 @@
 
             <div class="stage-select">
 		<!-- 👇 추가된 단어 연습 버튼 -->
-		<button class="stage-btn" onclick="MakeAnihogo()">기록하는 일본어 <span id="MakeWord"> 수첩</span></button>
+		<button class="stage-btn" onclick="mynichiDAN()">단어 낭독(음성 읽기전용) <span id="MakeWord"> 수첩</span></button>
+		<button class="stage-btn" onclick="mynichiLONGDAN()">회화 낭독(음성 읽기전용) <span id="MakeWord"> 수첩</span></button>
+
+		<button class="stage-btn" onclick="MakeAnihogo()">기록하는 일본어(기록전용) <span id="MakeWord"> 수첩</span></button>
+
 	    <button class="stage-btn" onclick="startWordPractice()">단어 연습 (DAN.JS 풀) <span id="countWord"> 180 문장</span></button>
                 <button class="stage-btn" onclick="startStage(1)">1단계 (기초 필수 100문장) <span id="count1">40문장</span></button>
                 <button class="stage-btn" onclick="startStage(2)">2단계 (1단계 + 확장 일상) <span id="count2">60문장</span></button>
@@ -1430,6 +1434,140 @@ function saveALLDAN() {
 
 // 추가되는 마지막 라인===============================================================
 
+// 추가되는 마지막 라인 내거 ===============================================================
+
+
+// ==========================================
+// MYNICHIDANadd (단어) 및 MYNICHILONGDANadd (긴 문장) 순차 낭독 모드 로직 (일본어 전용 + 여유있는 대기시간)
+// ==========================================
+let customPool = [];
+let customCurrentIndex = 0;
+let isCustomMode = false;
+let customTimer = null;
+
+// 1. 단어 모드 버튼 클릭 시
+function mynichiDAN() {
+    startCustomReadingMode(window.MYNICHIDANadd, "단어 연습 (MYNICHIDANadd)");
+}
+
+// 2. 긴 문장 모드 버튼 클릭 시
+function mynichiLONGDAN() {
+    startCustomReadingMode(window.MYNICHILONGDANadd, "문장 연습 (MYNICHILONGDANadd)");
+}
+
+// 3. 공통 초기화 및 데이터 로드 함수
+function startCustomReadingMode(targetArray, modeTitleName) {
+    customPool = [];
+
+    try {
+        let rawData = targetArray || [];
+        
+        if (Array.isArray(rawData) && rawData.length > 0) {
+            rawData.forEach(item => {
+                if (item) {
+                    customPool.push({
+                        jp: String(item.jp || "").trim(),
+                        mean: String(item.mean || "").trim(),
+                        read: String(item.read || "").trim()
+                    });
+                }
+            });
+        }
+        
+        if (customPool.length === 0) {
+            alert("데이터가 비어있거나 올바르지 않습니다.");
+            return;
+        }
+
+        isCustomMode = true;
+        customCurrentIndex = 0;
+        
+        if (typeof stageView !== 'undefined' && stageView) stageView.classList.add("hidden");
+        if (typeof practiceView !== 'undefined' && practiceView) practiceView.classList.remove("hidden");
+        if (typeof canvasSectionWrapper !== 'undefined' && canvasSectionWrapper) canvasSectionWrapper.classList.add("hidden");
+        
+        loadCustomSentence(modeTitleName);
+
+    } catch (error) {
+        console.error("데이터 처리 오류:", error);
+        alert("데이터 로드 중 오류가 발생했습니다.");
+    }
+}
+
+// 4. 순차적으로 문장을 표시하고 일본어만 음성 재생 후 여유 있는 대기 시간 부여
+function loadCustomSentence(modeTitleName) {
+    if (!isCustomMode) return;
+
+    if (typeof userInput !== 'undefined' && userInput) {
+        userInput.disabled = true;
+        userInput.value = "";
+    }
+
+    if (customCurrentIndex >= customPool.length) {
+        if (typeof practiceView !== 'undefined' && practiceView) {
+            practiceView.innerHTML = `
+                <h2>🎉 ${modeTitleName} 완료!</h2>
+                <p style="font-size: 1.2rem; color: #4dabf7; margin-bottom: 20px;">모든 항목을 순차적으로 완주했습니다!</p>
+                <button onclick="location.reload()" style="padding: 12px 25px; font-size: 1rem; background: #ff6b6b; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">메뉴로 돌아가기</button>
+            `;
+        }
+        return;
+    }
+
+    const current = customPool[customCurrentIndex];
+    
+    if (typeof stageTitle !== 'undefined' && stageTitle) stageTitle.innerText = `📁 ${modeTitleName}`;
+    if (typeof progressText !== 'undefined' && progressText) progressText.innerText = `진행: ${customCurrentIndex + 1} / ${customPool.length}`;
+    
+    if (typeof slotTop !== 'undefined' && slotTop) slotTop.innerHTML = `<div class="row-label">일본어 원문</div><div class="box-top-target">${current.jp}</div>`;
+    if (typeof slotMid !== 'undefined' && slotMid) slotMid.innerHTML = `<div class="row-label">한국어 해석</div><div class="box-mid">${current.mean}</div>`;
+    if (typeof slotBottom !== 'undefined' && slotBottom) slotBottom.innerHTML = `<div class="row-label">발음</div><div class="box-bottom-input">${current.read}</div>`;
+
+    if (typeof feedbackMsg !== 'undefined' && feedbackMsg) {
+        feedbackMsg.style.color = "#4dabf7";
+        feedbackMsg.innerText = "🔊 일본어 음성 출력 중...";
+    }
+
+    // 오직 일본어만 읽어주는 전용 함수 호출
+    playJapaneseOnly(current.jp, () => {
+        if (customTimer) clearTimeout(customTimer);
+        
+        // ⏱️ 대기 시간을 기존보다 넉넉하게 3.5초(3500밀리초)로 늘렸습니다. (필요시 시간 수정 가능)
+        customTimer = setTimeout(() => {
+            if (isCustomMode) {
+                customCurrentIndex++;
+                loadCustomSentence(modeTitleName);
+            }
+        }, 7000); 
+    });
+}
+
+// 5. 일본어만 재생하는 독립 함수
+function playJapaneseOnly(text, onComplete) {
+    if (!('speechSynthesis' in window)) {
+        if (onComplete) onComplete();
+        return;
+    }
+
+    window.speechSynthesis.cancel(); // 이전 음성 취소
+
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'ja-JP';
+    utter.rate = 0.9; // 속도 조절 (필요시 0.8 등으로 조절 가능)
+
+    utter.onend = () => {
+        if (onComplete) onComplete();
+    };
+    utter.onerror = () => {
+        if (onComplete) onComplete();
+    };
+
+    window.speechSynthesis.speak(utter);
+}
+
+
+
+// 내가 필요해서 추가한 마지막 라인===============================
 
 
 	function playJapanese(text) {
@@ -3306,6 +3444,14 @@ window.externalSentences = [
 
 window.addDANadd = [
 ];
+		window.MYNICHIDANadd = [
+{ jp: "きのう、びょういん に いきました", mean: "어제, 병원 에 가다 ~했습니다", read: "키노우, 뵤우인 니 이키마시타" }
+];
+
+window.MYNICHILONGDANadd = [
+{ jp: "きのう、びょういん に いきました", mean: "어제, 병원 에 가다 ~했습니다", read: "키노우, 뵤우인 니 이키마시타" }
+];
+
     </script>
 
 </body>
