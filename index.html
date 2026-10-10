@@ -1486,6 +1486,11 @@ function startCustomReadingMode(targetArray, modeTitleName) {
             return;
         }
 
+        // 🎯 [추가된 부분] 데이터를 다 담은 후 순서를 무작위로 섞어줍니다.
+        if (typeof shuffleArray === 'function') {
+            customPool = shuffleArray(customPool);
+        }
+
         isCustomMode = true;
         customCurrentIndex = 0;
         
