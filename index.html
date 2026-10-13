@@ -2302,30 +2302,34 @@ function initWordPracticeMode(data) {
 
 		//오답노트 버튼 눌렀을때
 function openWrongNote() {
-    // 1. 나중에 오답노트 저장을 구현할 위치 (주석 처리)
-    // const current = currentStageSentences[currentIndex];
-    // saveToLocalStorage(current); 
+    // 1. 현재 진행 중인 단어 확인
+    if (!currentStageSentences || currentIndex >= currentStageSentences.length) return;
+    const current = currentStageSentences[currentIndex];
 
-    // 2. 대기 상태 및 입력창 초기화
+    // [참고] 나중에 오답노트 저장을 구현할 때 여기에 코드를 넣으시면 됩니다.
+    // saveToLocalStorage(current);
+
+    // 2. 대기 상태(isWaitingForNext) 강제 해제
     isWaitingForNext = false;
-    
+
+    // 3. 음성 재생 등으로 인해 잠겼을 수 있는 입력창 및 피드백 완전 초기화
     if (typeof userInput !== 'undefined' && userInput) {
-        userInput.disabled = false;
-        userInput.value = "";
-        userInput.focus();
+        userInput.disabled = false; // 입력 차단 풀기
+        userInput.value = "";       // 입력창 비우기
+        userInput.focus();          // 포커스 유지
     }
 
-    // 3. 피드백 메시지 정리
-    const fMsg = document.getElementById("feedbackMsg");
-    if (fMsg) {
-        fMsg.style.color = "#ff5722";
-        fMsg.innerText = "⏭️ 다음 문제로 넘어갑니다.";
+    const feedbackMsg = document.getElementById("feedbackMsg");
+    if (feedbackMsg) {
+        feedbackMsg.style.color = "#ff5722";
+        feedbackMsg.innerText = "⏭️ 다음 문제로 넘어갑니다.";
     }
 
-    // 4. 지연 없이 곧바로 다음 인덱스로 이동
+    // 4. setTimeout 지연 없이 곧바로 다음 인덱스로 이동 및 문제 로드
     currentIndex++;
+    
     if (currentIndex < currentStageSentences.length) {
-        loadSentence();
+        loadSentence(); // 다음 문제 즉시 불러오기
     } else {
         alert("모든 단어 연습이 완료되었습니다!");
         if (typeof returnToMenu === 'function') {
