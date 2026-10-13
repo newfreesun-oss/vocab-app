@@ -330,7 +330,7 @@
 
 		<button class="stage-btn" onclick="MakeAnihogo()">기록하는 일본어(기록전용) <span id="MakeWord"> 수첩</span></button>
 
-	    <button class="stage-btn" onclick="startWordPractice()">단어 연습 (DAN.JS 풀) <span id="countWord"> 180 문장</span></button>
+	    <button class="stage-btn" onclick="startWordPractice()">단어 연습 (DAN.JS 풀) <span id="countWord"> 244 문장</span></button>
 				<button class="stage-btn" onclick="downloadWrongNotes()">+++++오답 노트 저장++++++ <span id="WrongNotes">0</span></button>
                 <button class="stage-btn" onclick="startStage(1)">1단계 (기초 필수 100문장) <span id="count1">40문장</span></button>
                 <button class="stage-btn" onclick="startStage(2)">2단계 (1단계 + 확장 일상) <span id="count2">60문장</span></button>
@@ -1712,7 +1712,7 @@ document.addEventListener('click', function() {
      function updateStageCounts() {
     const extraCount = includeExtra ? extraPool.length : 0;
 document.getElementById("MakeWord").innerText = `${0 + extraCount} 문장`;
-document.getElementById("countWord").innerText = `${389 + extraCount} 문장`;
+document.getElementById("countWord").innerText = `${244 + extraCount} 문장`;
     document.getElementById("count1").innerText = `${40 + extraCount} 문장`;
     document.getElementById("count2").innerText = `${60 + extraCount} 문장`;
     document.getElementById("count3").innerText = `${70 + extraCount} 문장`;
