@@ -2301,7 +2301,7 @@ function initWordPracticeMode(data) {
         }
 
 		//오답노트 버튼 눌렀을때
-function handleWrongNoteAndNext() {
+function openWrongNote() {
     const current = currentStageSentences[currentIndex];
     if (!current) return;
 
@@ -2616,31 +2616,6 @@ function playBilingualAudio(jpText, krText, onComplete) {
     };
 
     window.speechSynthesis.speak(jpUtter);
-}
-
-// 오답노트 버튼 클릭 이벤트 함수
-function handleWrongNoteClick() {
-    // 1. 현재 진행 중인 단어 가져오기
-    const currentWord = currentStageSentences[currentIndex];
-    
-    if (currentWord) {
-        // 2. 오답노트(LocalStorage 등)에 현재 단어 저장
-        saveToWrongNote(currentWord);
-        
-        // 3. 사용자에게 오답 처리 알림 피드백 (선택 사항)
-        const feedbackMsg = document.getElementById("feedbackMsg");
-        if (feedbackMsg) {
-            feedbackMsg.innerText = "📌 오답노트에 추가되었습니다!";
-            feedbackMsg.style.color = "#ff5722";
-        }
-
-        // 4. 입력창 비우고 다음 단어로 바로 넘어가기 (제출 처리)
-        userInput.value = "";
-        
-        // checkAndSubmit()을 직접 호출하거나 다음 인덱스로 이동
-        // 만약 checkAndSubmit()이 정답 검사를 요구한다면 강제로 다음 단어로 넘기는 로직을 실행합니다.
-        goToNextSentence(); 
-    }
 }
 
 //단어 추가문장
