@@ -2302,26 +2302,27 @@ function initWordPracticeMode(data) {
 
 		//오답노트 버튼 눌렀을때
 function openWrongNote() {
-    const current = currentStageSentences[currentIndex];
-    if (!current) return;
+    // 1. 나중에 오답노트 저장을 구현할 위치 (주석 처리)
+    // const current = currentStageSentences[currentIndex];
+    // saveToLocalStorage(current); 
 
-    // 1. 오답노트에 현재 단어 저장 (localStorage 등 활용)
-    saveToWrongNote(current);
-
-    // 2. 피드백 메시지 표시 (선택 사항)
-    if (typeof feedbackMsg !== 'undefined' && feedbackMsg) {
-        feedbackMsg.style.color = "#ff5722";
-        feedbackMsg.innerText = "📌 오답노트에 추가하고 다음 문제로 넘어갑니다.";
-    }
-
-    // 3. 대기 상태(isWaitingForNext) 및 입력창 초기화, 음성 재생 중단 등 정리
+    // 2. 대기 상태 및 입력창 초기화
     isWaitingForNext = false;
+    
     if (typeof userInput !== 'undefined' && userInput) {
         userInput.disabled = false;
         userInput.value = "";
+        userInput.focus();
     }
 
-    // 4. 지연 없이 곧바로 다음 인덱스로 넘어가기
+    // 3. 피드백 메시지 정리
+    const fMsg = document.getElementById("feedbackMsg");
+    if (fMsg) {
+        fMsg.style.color = "#ff5722";
+        fMsg.innerText = "⏭️ 다음 문제로 넘어갑니다.";
+    }
+
+    // 4. 지연 없이 곧바로 다음 인덱스로 이동
     currentIndex++;
     if (currentIndex < currentStageSentences.length) {
         loadSentence();
