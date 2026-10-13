@@ -2306,30 +2306,48 @@ function openWrongNote() {
     if (!currentStageSentences || currentIndex >= currentStageSentences.length) return;
     const current = currentStageSentences[currentIndex];
 
-    // [참고] 나중에 오답노트 저장을 구현할 때 여기에 코드를 넣으시면 됩니다.
-    // saveToLocalStorage(current);
+    // 2. localStorage에 'wrongWords' 키로 오답 저장
+    try {
+        let wrongWords = [];
+        const localData = localStorage.getItem('wrongWords');
+        if (localData) {
+            wrongWords = JSON.parse(localData);
+        }
 
-    // 2. 대기 상태(isWaitingForNext) 강제 해제
+        // 중복 저장 방지 (이미 오답노트에 있는 단어가 아니라면 추가)
+        const isExist = wrongWords.some(item => item.jp === current.jp);
+        if (!isExist) {
+            wrongWords.push({
+                jp: current.jp,
+                mean: current.mean,
+                read: current.read
+            });
+
+            localStorage.setItem('wrongWords', JSON.stringify(wrongWords));
+        }
+    } catch (e) {
+        console.error("웹 스토리지 오답 저장 오류:", e);
+    }
+
+    // 3. 대기 상태(isWaitingForNext) 및 입력창 초기화
     isWaitingForNext = false;
-
-    // 3. 음성 재생 등으로 인해 잠겼을 수 있는 입력창 및 피드백 완전 초기화
-    if (typeof userInput !== 'undefined' && userInput) {
-        userInput.disabled = false; // 입력 차단 풀기
-        userInput.value = "";       // 입력창 비우기
-        userInput.focus();          // 포커스 유지
-    }
-
-    const feedbackMsg = document.getElementById("feedbackMsg");
-    if (feedbackMsg) {
-        feedbackMsg.style.color = "#ff5722";
-        feedbackMsg.innerText = "⏭️ 다음 문제로 넘어갑니다.";
-    }
-
-    // 4. setTimeout 지연 없이 곧바로 다음 인덱스로 이동 및 문제 로드
-    currentIndex++;
     
+    if (typeof userInput !== 'undefined' && userInput) {
+        userInput.disabled = false;
+        userInput.value = "";
+        userInput.focus();
+    }
+
+    const fMsg = document.getElementById("feedbackMsg");
+    if (fMsg) {
+        fMsg.style.color = "#ff5722";
+        fMsg.innerText = "📌 오답노트에 저장하고 다음 문제로 넘어갑니다.";
+    }
+
+    // 4. 지연 없이 곧바로 다음 문제로 이동
+    currentIndex++;
     if (currentIndex < currentStageSentences.length) {
-        loadSentence(); // 다음 문제 즉시 불러오기
+        loadSentence();
     } else {
         alert("모든 단어 연습이 완료되었습니다!");
         if (typeof returnToMenu === 'function') {
