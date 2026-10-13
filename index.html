@@ -1864,13 +1864,10 @@ function startWordPractice() {
     currentPracticeType = 'word'; // 현재 모드를 '단어 연습'으로 설정
     showPracticeView();
 
-    // 1. 단어 데이터 가져오기 (MYNICHIDANadd 우선, 없으면 danList 사용)
+   // 1. danList 등의 타 데이터 참조를 완전히 제외하고 window.MYNICHIDANadd만 지정
     let addData = window.MYNICHIDANadd || [];
-    if (addData.length === 0 && typeof danList !== 'undefined') {
-        addData = danList;
-    }
 
-    // 2. 이전 데이터 참조 없이 순수 단어장 데이터만 사용
+    // 2. 외부/기존 데이터 섞지 않고 addData만 원본 데이터로 사용
     let rawData = addData;
 
     // 3. 추가 버튼(includeExtra)이 켜져있다면 extraPool만 누적
