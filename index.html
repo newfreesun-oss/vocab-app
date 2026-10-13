@@ -331,11 +331,13 @@
 		<button class="stage-btn" onclick="MakeAnihogo()">기록하는 일본어(기록전용) <span id="MakeWord"> 수첩</span></button>
 
 	    <button class="stage-btn" onclick="startWordPractice()">단어 연습 (DAN.JS 풀) <span id="countWord"> 180 문장</span></button>
+				<button class="stage-btn" onclick="downloadWrongNotes()">오답 노트 저장) <span id="WrongNotes">0</span></button>
                 <button class="stage-btn" onclick="startStage(1)">1단계 (기초 필수 100문장) <span id="count1">40문장</span></button>
                 <button class="stage-btn" onclick="startStage(2)">2단계 (1단계 + 확장 일상) <span id="count2">60문장</span></button>
                 <button class="stage-btn" onclick="startStage(3)">3단계 (1~2단계 + 심화 응오후 1:32 2026-10-01용) <span id="count3">70문장</span></button>
                 <button class="stage-btn" onclick="startStage(4)">4단계 (1~3단계 + 유창성 도전) <span id="count4">76문장</span></button>
                 <button class="stage-btn" onclick="startStage(5)">5단계 (1~4단계 + 마스터 랠리) <span id="count5">40문장</span></button>
+				
             </div>
         </div>
 
@@ -2640,6 +2642,56 @@ function playBilingualAudio(jpText, krText, onComplete) {
 
     window.speechSynthesis.speak(jpUtter);
 }
+
+
+// 오답노트 저장.
+function downloadWrongNotes() {
+    let wrongWords = [];
+    try {
+        const localData = localStorage.getItem('wrongWords');
+        if (localData) {
+            wrongWords = JSON.parse(localData);
+        }
+    } catch (e) {
+        wrongWords = [];
+    }
+
+    // 💡 저장할 오답이 없을 때 안내 팝업 실행
+    if (wrongWords.length === 0) {
+        alert("다운로드할 오답노트 데이터가 없습니다.");
+        return;
+    }
+
+    const isConfirm = confirm(`저장된 오답 ${wrongWords.length}개 항목을 파일로 다운로드하시겠습니까?`);
+    if (!isConfirm) return;
+
+    try {
+        const formattedItems = wrongWords.map(item => JSON.stringify(item)).join(',\n');
+        const fileContent = `window.wrongWords = [\n${formattedItems}\n];`;
+
+        const blob = new Blob([fileContent], { type: 'text/javascript;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "wrongWords.txt";
+        link.style.display = "none";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+
+		// 💡 저장이 끝난 후 로컬스토리지 및 관련 데이터 초기화
+        localStorage.removeItem('wrongWords');
+        if (typeof window.wrongWords !== 'undefined') {
+            window.wrongWords = [];
+        }
+
+        alert("오답노트 다운로드가 완료되었습니다!");
+    } catch (error) {
+        console.error("오답 다운로드 오류:", error);
+        alert("다운로드 중 오류가 발생했습니다.");
+    }
+}
+		
 
 //단어 추가문장
 window.externalSentencesDan = [
