@@ -1860,25 +1860,38 @@ document.getElementById("MakeWord").innerText = `${0 + extraCount} 문장`;
 
 function startWordPractice() {
     console.log("단어 연습 모드 시작");
-    
-    currentPracticeType = 'word'; // 현재 모드를 '단어 연습'으로 설정
+	
+	// 최신추가 단어장 오답노트버튼
+	currentPracticeType = 'word'; // 현재 모드를 '단어 연습'으로 설정
+	// 연습 화면으로 전환 로직...
     showPracticeView();
 
-    // 1. 단어 데이터 가져오기 (MYNICHIDANadd 우선, 없으면 danList 사용)
-    let addData = window.MYNICHIDANadd || [];
-    if (addData.length === 0 && typeof danList !== 'undefined') {
-        addData = danList;
-    }
+    // 1. 기본으로 가져올 단어 풀 확인 (예: 기존에 있던 데이터나 danList)
+    let baseList = (typeof currentStageSentences !== 'undefined' && Array.isArray(currentStageSentences) && currentStageSentences.length > 0) 
+                    ? currentStageSentences 
+                    : [];
 
-    // 2. 이전 데이터 참조 없이 순수 단어장 데이터만 사용
-    let rawData = addData;
+    // 2. 추가할 180개 단어 데이터 가져오기
+    //window.danList || window.externalSentencesDan || 삭제
+	let addData = window.MYNICHIDANadd || [];
+    if (addData.length === 0 && typeof danList !== 'undefined') addData = danList;
 
-    // 3. 추가 버튼(includeExtra)이 켜져있다면 extraPool만 누적
+    // 3. 만약 기존 리스트가 아예 비어있었다면 addData로 시작, 아니면 기존 리스트에 addData를 누적(concat)
+    let rawData = baseList.length > 0 ? baseList : addData;
+
+    // 4. 추가 버튼(includeExtra)이 켜져있다면 extraPool도 함께 누적
     if (typeof includeExtra !== 'undefined' && includeExtra && typeof extraPool !== 'undefined' && extraPool.length > 0) {
         rawData = rawData.concat(extraPool);
     }
+    
+    // 만약 이미 baseList가 있는데여기에 danList를 버튼 누를 때마다 추가하고 싶다면 아래와 같이 명시적으로 더해줄 수도 있습니다.
+    // (예: 단어 추가 버튼을 누를 때마다 180개가 기존 목록에 계속 더해지게 하려면)
+    /*
+    if (addData.length > 0) {
+        rawData = baseList.concat(addData);
+    }
+    */
 
-    // 4. 데이터 정제 및 연습 화면 로드
     if (Array.isArray(rawData) && rawData.length > 0) {
         currentStageSentences = shuffleArray(rawData.map(item => ({
             jp: String(item.jp || "").trim(),
@@ -1912,38 +1925,7 @@ function startWordPractice() {
     }
 }
 
-    if (Array.isArray(rawData) && rawData.length > 0) {
-        currentStageSentences = shuffleArray(rawData.map(item => ({
-            jp: String(item.jp || "").trim(),
-            mean: String(item.mean || "").trim(),
-            read: String(item.read || "").trim()
-        })));
-
-        const countSpan = document.getElementById("countWord");
-        if (countSpan) {
-            countSpan.textContent = `${currentStageSentences.length} 문장`;
-        }
-
-        currentIndex = 0;
-        if (stageTitle) {
-            stageTitle.innerText = `단어 연습 (총 ${currentStageSentences.length}문장)`;
-        }
-
-        if (stageView) stageView.classList.add("hidden");
-        if (practiceView) practiceView.classList.remove("hidden");
-
-        if (selectedMode === 'jp') {
-            if (canvasSectionWrapper) canvasSectionWrapper.classList.remove("hidden");
-        } else {
-            if (canvasSectionWrapper) canvasSectionWrapper.classList.add("hidden");
-        }
-
-        loadSentence();
-
-    } else {
-        alert("데이터를 찾지 못했습니다. HTML 내부에 danList 배열이 올바르게 정의되어 있는지 확인해주세요.");
-    }
-}
+		
 */
 //최신 오답노트 추가 보이기
 		function showPracticeView() {
