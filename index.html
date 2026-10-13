@@ -2300,6 +2300,39 @@ function initWordPracticeMode(data) {
             }
         }
 
+		//오답노트 버튼 눌렀을때
+function handleWrongNoteAndNext() {
+    const current = currentStageSentences[currentIndex];
+    if (!current) return;
+
+    // 1. 오답노트에 현재 단어 저장 (localStorage 등 활용)
+    saveToWrongNote(current);
+
+    // 2. 피드백 메시지 표시 (선택 사항)
+    if (typeof feedbackMsg !== 'undefined' && feedbackMsg) {
+        feedbackMsg.style.color = "#ff5722";
+        feedbackMsg.innerText = "📌 오답노트에 추가하고 다음 문제로 넘어갑니다.";
+    }
+
+    // 3. 대기 상태(isWaitingForNext) 및 입력창 초기화, 음성 재생 중단 등 정리
+    isWaitingForNext = false;
+    if (typeof userInput !== 'undefined' && userInput) {
+        userInput.disabled = false;
+        userInput.value = "";
+    }
+
+    // 4. 지연 없이 곧바로 다음 인덱스로 넘어가기
+    currentIndex++;
+    if (currentIndex < currentStageSentences.length) {
+        loadSentence();
+    } else {
+        alert("모든 단어 연습이 완료되었습니다!");
+        if (typeof returnToMenu === 'function') {
+            returnToMenu();
+        }
+    }
+}
+		
         userInput.addEventListener("input", function() {
             if (isWaitingForNext) {
                 const current = currentStageSentences[currentIndex];
@@ -2583,6 +2616,31 @@ function playBilingualAudio(jpText, krText, onComplete) {
     };
 
     window.speechSynthesis.speak(jpUtter);
+}
+
+// 오답노트 버튼 클릭 이벤트 함수
+function handleWrongNoteClick() {
+    // 1. 현재 진행 중인 단어 가져오기
+    const currentWord = currentStageSentences[currentIndex];
+    
+    if (currentWord) {
+        // 2. 오답노트(LocalStorage 등)에 현재 단어 저장
+        saveToWrongNote(currentWord);
+        
+        // 3. 사용자에게 오답 처리 알림 피드백 (선택 사항)
+        const feedbackMsg = document.getElementById("feedbackMsg");
+        if (feedbackMsg) {
+            feedbackMsg.innerText = "📌 오답노트에 추가되었습니다!";
+            feedbackMsg.style.color = "#ff5722";
+        }
+
+        // 4. 입력창 비우고 다음 단어로 바로 넘어가기 (제출 처리)
+        userInput.value = "";
+        
+        // checkAndSubmit()을 직접 호출하거나 다음 인덱스로 이동
+        // 만약 checkAndSubmit()이 정답 검사를 요구한다면 강제로 다음 단어로 넘기는 로직을 실행합니다.
+        goToNextSentence(); 
+    }
 }
 
 //단어 추가문장
