@@ -359,6 +359,10 @@
             <div class="progress-box">
                 <button class="back-btn" onclick="returnToMenu()">← 스테이지 선택으로</button>
                 <div id="progressText">문장 1 / 1</div>
+
+				<!-- 최신 추가 ★ 단어 연습 전용 오답노트 버튼 (초기 상태: hidden) -->
+    			<button class="wrong-note-btn hidden" id="wrongNoteBtn" onclick="openWrongNote()">오답노트</button>
+				
             </div>
         </div>
     </div>
@@ -535,6 +539,9 @@
 	<script src="addDAN.JS"></script>
 
     <script>
+		// 새로추가 단어연습의 오답노트
+		let currentPracticeType = ''; // 'word' 또는 'stage' 등
+		
 // 문자 디스플레이 시작 ===============================================================
 const memoDisplayArea = document.getElementById("memoDisplayArea");
 
@@ -1847,6 +1854,11 @@ document.getElementById("countWord").innerText = `${389 + extraCount} 문장`;
 
 function startWordPractice() {
     console.log("단어 연습 모드 시작");
+	
+	// 최신추가 단어장 오답노트버튼
+	currentPracticeType = 'word'; // 현재 모드를 '단어 연습'으로 설정
+	// 연습 화면으로 전환 로직...
+    showPracticeView();
 
     // 1. 기본으로 가져올 단어 풀 확인 (예: 기존에 있던 데이터나 danList)
     let baseList = (typeof currentStageSentences !== 'undefined' && Array.isArray(currentStageSentences) && currentStageSentences.length > 0) 
@@ -1907,6 +1919,22 @@ function startWordPractice() {
     }
 }
 
+//최신 오답노트 추가 보이기
+		function showPracticeView() {
+    // 메인 메뉴 숨기고 연습 화면 보이기
+    document.getElementById('practiceView').classList.remove('hidden');
+    
+    const wrongBtn = document.getElementById('wrongNoteBtn');
+    
+    // ★ 단어 연습으로 들어왔을 때만 오답노트 버튼 표시
+    if (currentPracticeType === 'word') {
+        wrongBtn.classList.remove('hidden');
+    } else {
+        wrongBtn.classList.add('hidden');
+    }
+    
+    // 카드 슬롯 및 데이터 초기화 진행...
+}
 	       
 	function generateStage1() {
             let list = [];
@@ -2096,7 +2124,11 @@ function initWordPracticeMode(data) {
         }
 
         function returnToMenu() {
-            practiceView.classList.add("hidden");
+			//최신 추가 오답노트 버튼 두개추가
+			currentPracticeType = ''; // 모드 초기화
+		    document.getElementById('wrongNoteBtn').classList.add('hidden'); // 오답노트 버튼 숨김
+			
+			practiceView.classList.add("hidden");
             canvasSectionWrapper.classList.add("hidden");
             stageView.classList.add("hidden");
             location.reload();
